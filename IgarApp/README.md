@@ -1,8 +1,9 @@
-# Welcome to your Expo app 👋
+# Bem-vindo ao IGARAPP
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Projeto criando usando React Native, Expo
+[Mais informações sobre o projeto](#sobre-o-projeto)
 
-## Get started
+## Configurações iniciais
 
 1. Install dependencies
 
@@ -16,14 +17,7 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+O arquivo fonte pode ser encontrado na pasta 'app'
 
 ## Get a fresh project
 
@@ -33,18 +27,11 @@ When you're ready, run:
 npm run reset-project
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Tem um script que reseta o projeto, pode ser executado, caso dê problema
 
-## Learn more
 
-To learn more about developing your project with Expo, look at the following resources:
+## Sobre o Projeto
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+O presente projeto propõe o desenvolvimento de um sistema digital voltado à organização, validação e promoção do voluntariado ambiental urbano, com foco na limpeza de igarapés e rios na cidade de Manaus. Essa abordagem é fundamentada na relevância dos corpos hídricos amazônicos, que desempenham papel essencial no equilíbrio ecológico e na qualidade de vida urbana. Estudos recentes indicam que uma parcela significativa dos ambientes aquáticos encontra-se em estado crítico de poluição por resíduos sólidos, reforçando a necessidade de intervenções sistemáticas e contínuas.
 
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+O objetivo do projeto é desenvolver uma aplicação que permita estruturar ações de limpeza ambiental, facilitando a participação de voluntários e a atuação de organizações não governamentais, além de registrar e mensurar o impacto dessas atividades. A proposta baseia-se na utilização de tecnologia como suporte à organização social, promovendo maior eficiência, continuidade e visibilidade das ações ambientais realizadas em contextos urbanos.
