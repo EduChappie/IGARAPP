@@ -5,20 +5,25 @@ import {
   ImageBackground,
   Image,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { styles } from '../styles/index_style'
-
-const { height: screenHeight } = Dimensions.get('window');
+import { styles } from '@/styles/_style'
+import { useRouter } from 'expo-router';
 
 export default function LoginScreen() {
+
+  const router = useRouter();
+
+  function navegacaoSimples() {
+    router.push('/login')
+  }
+
   return (
     <View style={styles.mainContainer}>
 
       {/* Imagem de fundo */}
       <ImageBackground
-        source={require('../assets/background/floresta.png')}
+        source={require('@/assets/images/floresta.png')}
         style={styles.backgroundImage}
         resizeMode="cover"
         imageStyle={ styles.backgroundImageStyle }
@@ -39,7 +44,7 @@ export default function LoginScreen() {
         {/* Conteúdo superior */}
         <View style={styles.topContentContainer}>
           <Image
-            source={require('@/assets/logo/logo.png')}
+            source={require('@/assets/images/logo.png')}
             style={styles.applicationLogoImage}
           />
 
@@ -59,27 +64,31 @@ export default function LoginScreen() {
         <View style={styles.bottomActionContainer}>
 
           {/* Botão voluntário */}
-          <TouchableOpacity style={styles.primaryActionButton}>
+          <TouchableOpacity 
+          onPress={navegacaoSimples}
+          style={styles.primaryActionButton}>
             <View style={styles.buttonTextContainer}>
               <Text style={styles.buttonSmallLabelText}>Feito para o público</Text>
               <Text style={styles.buttonMainText}>Sou um voluntário</Text>
             </View>
 
             <Image
-              source={require('@/assets/geral/terra.png')}
+              source={require('@/assets/images/terra.png')}
               style={styles.buttonIconImage}
             />
           </TouchableOpacity>
 
           {/* Botão organizador */}
-          <TouchableOpacity style={styles.secondaryActionButton}>
+          <TouchableOpacity 
+          onPress={navegacaoSimples}
+          style={styles.secondaryActionButton}>
             <View style={styles.buttonTextContainer}>
               <Text style={styles.buttonSmallLabelText}>Feito para ONG's</Text>
               <Text style={styles.buttonMainText}>Sou um organizador</Text>
             </View>
 
             <Image
-              source={require('@/assets/geral/globo.png')}
+              source={require('@/assets/images/globo.png')}
               style={styles.buttonIconImage}
             />
           </TouchableOpacity>

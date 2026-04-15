@@ -1,7 +1,64 @@
 import { Background } from '@react-navigation/elements';
 import { StyleSheet } from 'react-native';
 
-export const styles = StyleSheet.create({
+const extra = StyleSheet.create({
+  mainTitleText: {
+    fontSize: 28,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    lineHeight: 30,
+    textAlign: "center"
+  },
+  subtitleDescriptionText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#CCCCCC',
+    lineHeight: 18,
+    textAlign: 'center'
+  },
+  forgotPasswordText: {
+    fontSize: 13,
+    color: '#BBBBBB',
+    marginBottom: 10,
+    textAlign: 'center'
+  },
+  termsAndPrivacyText: {
+    fontSize: 12,
+    color: '#888888',
+    lineHeight: 16,
+    textAlign: 'center'
+  },
+  topContentContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 290,
+    alignItems: 'center'
+  },
+  inputFiled: {
+    backgroundColor: '#ffffff',
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 14,
+  },
+  inputFocused: {
+    borderWidth: 2,
+    borderColor: '#A6FF00',
+  },
+
+  topContentContainerFocus: {
+    paddingHorizontal: 24,
+    paddingTop: 90,
+  },
+  bottomActionContainerFocus: {
+    height: '70%',
+    backgroundColor: '#012A36',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    padding: 20,
+    paddingBottom: 30,
+  },
+})
+
+const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
     backgroundColor: '#000',
@@ -130,3 +187,5 @@ export const styles = StyleSheet.create({
     textDecorationLine: 'underline'
   }
 });
+
+export { styles, extra }
