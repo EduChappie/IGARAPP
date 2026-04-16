@@ -1,4 +1,3 @@
-import { Background } from '@react-navigation/elements';
 import { StyleSheet } from 'react-native';
 
 const extra = StyleSheet.create({
@@ -30,18 +29,54 @@ const extra = StyleSheet.create({
   },
   topContentContainer: {
     paddingHorizontal: 24,
-    paddingTop: 290,
+    paddingTop: 250,
     alignItems: 'center'
   },
-  inputFiled: {
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 14,
+  bottomActionContainer: {
+    height: '50%',
+    backgroundColor: '#012A36',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    padding: 20,
+    paddingBottom: 30,
   },
-  inputFocused: {
-    borderWidth: 2,
+  inputFiled: {
+    backgroundColor: 'rgba(0, 44, 59, 1)',
+    color: 'rgba(255, 255, 255, 0.7)',
+    borderRadius: 10,
+    marginTop: 10,
+    marginBottom: 10,
+    padding: 12,
+    fontSize: 18,
+    width: '100%',
+  },
+  eye: {
+    position: 'relative',
+    top: 20,
+    right: '12%'
+  },
+  inputFocused1: {
     borderColor: '#A6FF00',
+    borderWidth: 2,
+  },
+  inputFocused2: {
+    borderColor: '#A6FF00',
+    borderWidth: 2,
+  },
+  inputContainer: {
+    marginBottom: 10,
+    flexDirection: 'row',
+  },
+
+  buttonSubmit: {
+    color: 'black',
+    fontSize: 15,
+  },
+
+  label: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginTop: 5,
+    marginLeft: 10,
   },
 
   topContentContainerFocus: {
@@ -114,7 +149,7 @@ const styles = StyleSheet.create({
   },
 
   bottomActionContainer: {
-    height: '41%',
+    height: '42%',
     backgroundColor: '#012A36',
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,

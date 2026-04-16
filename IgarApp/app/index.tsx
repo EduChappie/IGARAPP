@@ -5,6 +5,7 @@ import {
   ImageBackground,
   Image,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { styles } from '@/styles/_style'
@@ -19,6 +20,13 @@ export default function LoginScreen() {
   }
 
   return (
+    <ScrollView
+                contentContainerStyle={{ flexGrow: 1 }}
+                style={{
+                  backgroundColor: '#012A36',
+                }}
+                keyboardShouldPersistTaps="handled"
+    >
     <View style={styles.mainContainer}>
 
       {/* Imagem de fundo */}
@@ -115,5 +123,6 @@ export default function LoginScreen() {
 
       </ImageBackground>
     </View>
+    </ScrollView>
   );
 }

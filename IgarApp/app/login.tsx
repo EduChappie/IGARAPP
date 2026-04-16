@@ -1,16 +1,28 @@
 import React, { useState } from "react";
-import { Image, ImageBackground, ScrollView, TextInput, View } from "react-native";
+import { Image, ImageBackground, ScrollView, TextInput, TouchableOpacity, View } from "react-native";
 import { Text } from "react-native";
 import { StyleSheet } from "react-native";
 import { styles, extra } from "@/styles/_style";
 import { LinearGradient } from "expo-linear-gradient";
 import { useIsFocused } from "@react-navigation/native";
+import {Ionicons} from "@expo/vector-icons"
 
 export default function LoginScreen() {
-    const [isFocused, setIsFocused] = useState(false);
+    const [isFocused1, setIsFocused1] = useState(false);
+    const [isFocused2, setIsFocused2] = useState(false);
+    const [isPasswordHidden, setIsPasswordHidden] = useState(true)
+
+
+    function passwordVisibility() {
+        setIsPasswordHidden(!isPasswordHidden);
+    }
+
     return (
         <ScrollView
             contentContainerStyle={{ flexGrow: 1 }}
+            style={{
+              backgroundColor: '#012A36',
+            }}
             keyboardShouldPersistTaps="handled"
         >
         <View style={styles.mainContainer}>
@@ -38,7 +50,7 @@ export default function LoginScreen() {
                 {/* Conteúdo superior */}
                 <View style={[
                     extra.topContentContainer,
-                    isFocused && extra.topContentContainerFocus
+                    (isFocused1 || isFocused2) && extra.topContentContainerFocus
                     ]}>
                   <Image
                     source={require('@/assets/images/logo.png')}
@@ -58,31 +70,73 @@ export default function LoginScreen() {
         
                 {/* Card inferior */}
                 <View style={[
-                    styles.bottomActionContainer,
-                    isFocused && extra.bottomActionContainerFocus
+                    extra.bottomActionContainer,
+                    (isFocused1 || isFocused2) && extra.bottomActionContainerFocus
                     ]}>
 
                   <View>
+                    <Text style={ extra.label }>
+                        Seu melhor e-mail
+                    </Text>
                     <TextInput
                         placeholder="Email"
                         style={[
                             extra.inputFiled,
-                            isFocused && extra.inputFocused
+                            isFocused1 && extra.inputFocused1
                         ]}
-                        onFocus={() => setIsFocused(true)}
-                        onBlur={() => setIsFocused(false)}
+                        onFocus={() => setIsFocused1(true)}
+                        onBlur={() => setIsFocused1(false)}
                     />
 
-                    <TextInput
-                        placeholder="Senha"
-                        style={[
-                            extra.inputFiled,
-                            isFocused && extra.inputFocused
-                        ]}
-                        onFocus={() => setIsFocused(true)}
-                        onBlur={() => setIsFocused(false)}
-                        secureTextEntry={true}
-                    />
+                    <Text style={ extra.label }>
+                        Sua senha
+                    </Text>
+
+                    <View style={ extra.inputContainer }>
+                        <TextInput
+                            placeholder="Senha"
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            textContentType="none"
+                            autoComplete="off"
+                            style={[
+                                extra.inputFiled,
+                                isFocused2 && extra.inputFocused2
+                            ]}
+                            onFocus={() => setIsFocused2(true)}
+                            onBlur={() => setIsFocused2(false)}
+                            secureTextEntry={isPasswordHidden}
+                        />
+                        <TouchableOpacity style={ extra.eye } onPress={passwordVisibility}>
+
+                            <Ionicons
+                                name={isPasswordHidden ? 'eye-off' : 'eye'}
+                                size={24}
+                                color="#A6FF00"/>
+
+                        </TouchableOpacity>
+                    </View>
+
+                    <TouchableOpacity
+                        style={{
+                            backgroundColor: 'rgba(219, 228, 229, 1)',
+                            flexDirection: 'row',
+                            justifyContent: 'center',
+                            width: '100%',
+                            padding: 15,
+                            borderRadius: 10,
+                            marginBottom: 20,
+                        }}
+                    >
+                        <Text style={ extra.buttonSubmit }>
+                            Criar conta </Text>
+                        <Ionicons
+                            name={'return-down-forward-outline'}
+                            size={20}
+                            color={'black'}
+                        />
+                    </TouchableOpacity>
+
                   </View>
                   
         
