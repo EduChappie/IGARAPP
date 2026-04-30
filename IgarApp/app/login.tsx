@@ -1,10 +1,8 @@
 import React, { useState } from "react";
 import { Image, ImageBackground, ScrollView, TextInput, TouchableOpacity, View } from "react-native";
 import { Text } from "react-native";
-import { StyleSheet } from "react-native";
 import { styles, extra } from "@/styles/_style";
 import { LinearGradient } from "expo-linear-gradient";
-import { useIsFocused } from "@react-navigation/native";
 import {Ionicons} from "@expo/vector-icons"
 
 export default function LoginScreen() {

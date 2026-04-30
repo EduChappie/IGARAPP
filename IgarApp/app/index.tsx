@@ -15,10 +15,6 @@ export default function LoginScreen() {
 
   const router = useRouter();
 
-  function navegacaoSimples() {
-    router.push('/login')
-  }
-
   return (
     <ScrollView
                 contentContainerStyle={{ flexGrow: 1 }}
@@ -73,7 +69,9 @@ export default function LoginScreen() {
 
           {/* Botão voluntário */}
           <TouchableOpacity 
-          onPress={navegacaoSimples}
+          onPress={() => {
+            router.push('/login')
+          }}
           style={styles.primaryActionButton}>
             <View style={styles.buttonTextContainer}>
               <Text style={styles.buttonSmallLabelText}>Feito para o público</Text>
@@ -88,7 +86,9 @@ export default function LoginScreen() {
 
           {/* Botão organizador */}
           <TouchableOpacity 
-          onPress={navegacaoSimples}
+          onPress={() => {
+            router.push('/cadastro_one');
+          }}
           style={styles.secondaryActionButton}>
             <View style={styles.buttonTextContainer}>
               <Text style={styles.buttonSmallLabelText}>Feito para ONG's</Text>

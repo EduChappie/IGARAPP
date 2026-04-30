@@ -29,11 +29,11 @@ const extra = StyleSheet.create({
   },
   topContentContainer: {
     paddingHorizontal: 24,
-    paddingTop: 250,
+    paddingTop: 100,
     alignItems: 'center'
   },
   bottomActionContainer: {
-    height: '50%',
+    height: '70%',
     backgroundColor: '#012A36',
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
