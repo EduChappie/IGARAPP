@@ -74,9 +74,7 @@ export default function cadastro_success() {
 
                 {/* Links no rodapé */}
                 <View style={cadastroSuccessExtra.footerLinks}>
-                    <Text style={extra.forgotPasswordText}>
-                        Esqueceu sua senha? <Text style={styles.underline}>Redefinir Senha</Text>
-                    </Text>
+                    
 
                     <Text style={extra.termsAndPrivacyText}>
                         Ao criar sua conta no <Text style={styles.destaque}>IgarApp</Text>, você estará concordando

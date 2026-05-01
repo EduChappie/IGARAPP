@@ -12,24 +12,36 @@ export default function cadastro_one() {
     const [isFocused2, setIsFocused2] = useState(false);
     const [isFocused3, setIsFocused3] = useState(false);
     const [isFocused4, setIsFocused4] = useState(false);
+    const [isFocused5, setIsFocused5] = useState(false);
     const [isPasswordHidden, setIsPasswordHidden] = useState(true);
-    const [cnpj, setCnpj] = useState('');
+    
+    const [data, setData] = useState('');
+    const [telefone, setTelefone] = useState('');
+
+    function formatData(value: string) {
+        const digits = value.replace(/\D/g, '').slice(0, 8);
+        return digits
+            .replace(/^(\d{2})(\d)/, '$1/$2')
+            .replace(/^(\d{2})\/(\d{2})(\d)/, '$1/$2/$3');
+    }
+
+    function formatTelefone(value: string) {
+        const digits = value.replace(/\D/g, '').slice(0, 11);
+        return digits
+            .replace(/^(\d{2})(\d)/, '($1) $2')
+            .replace(/\) (\d{5})(\d)/, ') $1-$2');
+    }
+
+    function handleDataChange(text: string) {
+        setData(formatData(text));
+    }
+
+    function handleTelefoneChange(text: string) {
+        setTelefone(formatTelefone(text));
+    }
 
     function passwordVisibility() {
         setIsPasswordHidden(!isPasswordHidden);
-    }
-
-    function formatCnpj(value: string) {
-        const digits = value.replace(/\D/g, '').slice(0, 14);
-        return digits
-            .replace(/^(\d{2})(\d)/, '$1.$2')
-            .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-            .replace(/\.(\d{3})(\d)/, '.$1/$2')
-            .replace(/(\d{4})(\d)/, '$1-$2');
-    }
-
-    function handleCnpjChange(text: string) {
-        setCnpj(formatCnpj(text));
     }
 
     return (
@@ -65,7 +77,7 @@ export default function cadastro_one() {
                 {/* Conteúdo superior */}
                 <View style={[
                     extra.topContentContainer,
-                    (isFocused1 || isFocused2 || isFocused3 || isFocused4) && extra.topContentContainerFocus
+                    (isFocused1 || isFocused2 || isFocused3 || isFocused4 || isFocused5) && extra.topContentContainerFocus
                     ]}>
                   <Image
                     source={require('@/assets/images/logo.png')}
@@ -86,7 +98,7 @@ export default function cadastro_one() {
                 {/* Card inferior */}
                 <View style={[
                     extra.bottomActionContainer,
-                    (isFocused1 || isFocused2 || isFocused3 || isFocused4) && extra.bottomActionContainerFocus
+                    (isFocused1 || isFocused2 || isFocused3 || isFocused4 || isFocused5) && extra.bottomActionContainerFocus
                     ]}>
 
                   <View>
@@ -97,6 +109,21 @@ export default function cadastro_one() {
                         <View style={cadastroExtra.stepLineActive} />
                         <View style={cadastroExtra.stepDotInactive} />
                     </View>
+
+                    {/* Nome do Usuário*/}
+                    <Text style={cadastroExtra.labelSmall}>
+                        Nome do usuário
+                    </Text>
+                    <TextInput
+                        placeholder="Digite o seu nome de usuário"
+                        placeholderTextColor="rgba(255,255,255,0.35)"
+                        style={[
+                            cadastroExtra.inputFieldFullWidth,
+                            isFocused3 && cadastroExtra.inputFieldFullWidthFocused
+                        ]}
+                        onFocus={() => setIsFocused3(true)}
+                        onBlur={() => setIsFocused3(false)}
+                    />
 
                     {/* Linha dupla: Email + Senha */}
                     <View style={cadastroExtra.rowInputContainer}>
@@ -153,38 +180,51 @@ export default function cadastro_one() {
 
                     </View>
 
-                    {/* Razão Social / Nome Fantasia */}
-                    <Text style={cadastroExtra.labelSmall}>
-                        Razão Social/Nome Fantasia
-                    </Text>
-                    <TextInput
-                        placeholder="Digite o nome da sua empresa como consta no documento"
-                        placeholderTextColor="rgba(255,255,255,0.35)"
-                        style={[
-                            cadastroExtra.inputFieldFullWidth,
-                            isFocused3 && cadastroExtra.inputFieldFullWidthFocused
-                        ]}
-                        onFocus={() => setIsFocused3(true)}
-                        onBlur={() => setIsFocused3(false)}
-                    />
+                    {/* Linha dupla: Data de Fundação + Número de telefone */}
+                    <View style={cadastroExtra.rowInputContainer}>
 
-                    {/* CNPJ */}
-                    <Text style={cadastroExtra.labelSmall}>
-                        CNPJ
-                    </Text>
-                    <TextInput
-                        placeholder="XX.XXX.XXX/XXXX-XX"
-                        placeholderTextColor="rgba(255,255,255,0.35)"
-                        keyboardType="numeric"
-                        value={cnpj}
-                        onChangeText={handleCnpjChange}
-                        style={[
-                            cadastroExtra.inputFieldFullWidth,
-                            isFocused4 && cadastroExtra.inputFieldFullWidthFocused
-                        ]}
-                        onFocus={() => setIsFocused4(true)}
-                        onBlur={() => setIsFocused4(false)}
-                    />
+                        {/* Data de Fundação */}
+                        <View style={cadastroExtra.halfInputWrapper}>
+                            <Text style={cadastroExtra.labelSmall}>
+                                Data de Fundação
+                            </Text>
+                            <TextInput
+                                placeholder="DD/MM/AAAA"
+                                placeholderTextColor="rgba(255,255,255,0.35)"
+                                keyboardType="numeric"
+                                value={data}
+                                onChangeText={handleDataChange}
+                                style={[
+                                    cadastroExtra.inputField,
+                                    isFocused4 && cadastroExtra.inputFieldFocused
+                                ]}
+                                onFocus={() => setIsFocused4(true)}
+                                onBlur={() => setIsFocused4(false)}
+                            />
+                        </View>
+
+                        {/* Número de telefone */}
+                        <View style={cadastroExtra.halfInputWrapper}>
+                            <Text style={cadastroExtra.labelSmall}>
+                                Número de telefone
+                            </Text>
+                            <TextInput
+                                placeholder="(XX) 9XXXX-XXXX"
+                                placeholderTextColor="rgba(255,255,255,0.35)"
+                                keyboardType="phone-pad"
+                                value={telefone}
+                                onChangeText={handleTelefoneChange}
+                                style={[
+                                    cadastroExtra.inputField,
+                                    isFocused5 && cadastroExtra.inputFieldFocused
+                                ]}
+                                onFocus={() => setIsFocused5(true)}
+                                onBlur={() => setIsFocused5(false)}
+                            />
+                        </View>
+
+                    </View>                  
+                    
 
                     {/* Botão Próxima etapa */}
                     <TouchableOpacity onPress={() => {
@@ -201,24 +241,6 @@ export default function cadastro_one() {
                     </TouchableOpacity>
 
                   </View>
-                  
-                  {/* Links */}
-                  <Text style={extra.forgotPasswordText}>
-                    Esqueceu sua senha? <Text style={ styles.underline } >Redefinir Senha</Text>
-                  </Text>
-        
-                  <Text style={extra.termsAndPrivacyText}>
-                    Ao criar sua conta no <Text style={styles.destaque}>IgarApp</Text>, você estará concordando
-                    {'\n'}
-                    com os <Text style={styles.destaque}>
-                        <Text style={ styles.underline } >
-                          Termos de Uso
-                        </Text>
-                      </Text> e <Text style={styles.destaque}>
-                        <Text style={ styles.underline } >Política de Privacidade
-                        </Text>
-                      </Text>
-                  </Text>
         
                 </View>
         

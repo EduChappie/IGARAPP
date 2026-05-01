@@ -203,24 +203,7 @@ export default function cadastro_one() {
                     </TouchableOpacity>
 
                   </View>
-                  
-                  {/* Links */}
-                  <Text style={extra.forgotPasswordText}>
-                    Esqueceu sua senha? <Text style={ styles.underline } >Redefinir Senha</Text>
-                  </Text>
-        
-                  <Text style={extra.termsAndPrivacyText}>
-                    Ao criar sua conta no <Text style={styles.destaque}>IgarApp</Text>, você estará concordando
-                    {'\n'}
-                    com os <Text style={styles.destaque}>
-                        <Text style={ styles.underline } >
-                          Termos de Uso
-                        </Text>
-                      </Text> e <Text style={styles.destaque}>
-                        <Text style={ styles.underline } >Política de Privacidade
-                        </Text>
-                      </Text>
-                  </Text>
+                
         
                 </View>
         
