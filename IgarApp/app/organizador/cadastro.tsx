@@ -5,36 +5,31 @@ import { styles, extra } from "@/styles/_style";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { cadastroExtra } from "@/styles/cadastro_extra_styles";
-import { cadastroTwoExtra } from "@/styles/cadastro_two_extra_styles";
 import { router } from "expo-router";
 
-export default function cadastro_two() {
+export default function cadastro_one() {
     const [isFocused1, setIsFocused1] = useState(false);
     const [isFocused2, setIsFocused2] = useState(false);
     const [isFocused3, setIsFocused3] = useState(false);
-    const [data, setData] = useState('');
-    const [telefone, setTelefone] = useState('');
+    const [isFocused4, setIsFocused4] = useState(false);
+    const [isPasswordHidden, setIsPasswordHidden] = useState(true);
+    const [cnpj, setCnpj] = useState('');
 
-    function formatData(value: string) {
-        const digits = value.replace(/\D/g, '').slice(0, 8);
+    function passwordVisibility() {
+        setIsPasswordHidden(!isPasswordHidden);
+    }
+
+    function formatCnpj(value: string) {
+        const digits = value.replace(/\D/g, '').slice(0, 14);
         return digits
-            .replace(/^(\d{2})(\d)/, '$1/$2')
-            .replace(/^(\d{2})\/(\d{2})(\d)/, '$1/$2/$3');
+            .replace(/^(\d{2})(\d)/, '$1.$2')
+            .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+            .replace(/\.(\d{3})(\d)/, '.$1/$2')
+            .replace(/(\d{4})(\d)/, '$1-$2');
     }
 
-    function formatTelefone(value: string) {
-        const digits = value.replace(/\D/g, '').slice(0, 11);
-        return digits
-            .replace(/^(\d{2})(\d)/, '($1) $2')
-            .replace(/\) (\d{5})(\d)/, ') $1-$2');
-    }
-
-    function handleDataChange(text: string) {
-        setData(formatData(text));
-    }
-
-    function handleTelefoneChange(text: string) {
-        setTelefone(formatTelefone(text));
+    function handleCnpjChange(text: string) {
+        setCnpj(formatCnpj(text));
     }
 
     return (
@@ -64,12 +59,13 @@ export default function cadastro_two() {
                   ]}
                   locations={[1, 0.5, 0]}
                   style={styles.backgroundGradientOverlay}
+                  
                 />
         
                 {/* Conteúdo superior */}
                 <View style={[
                     extra.topContentContainer,
-                    (isFocused1 || isFocused2 || isFocused3) && extra.topContentContainerFocus
+                    (isFocused1 || isFocused2 || isFocused3 || isFocused4) && extra.topContentContainerFocus
                     ]}>
                   <Image
                     source={require('@/assets/images/logo.png')}
@@ -90,34 +86,33 @@ export default function cadastro_two() {
                 {/* Card inferior */}
                 <View style={[
                     extra.bottomActionContainer,
-                    (isFocused1 || isFocused2 || isFocused3) && extra.bottomActionContainerFocus
+                    (isFocused1 || isFocused2 || isFocused3 || isFocused4) && extra.bottomActionContainerFocus
                     ]}>
 
                   <View>
 
-                    {/* Step indicator — passo 2 ativo */}
+                    {/* Step indicator */}
                     <View style={cadastroExtra.stepContainer}>
                         <View style={cadastroExtra.stepDot} />
                         <View style={cadastroExtra.stepLineActive} />
-                        <View style={cadastroExtra.stepDot} />
+                        <View style={cadastroExtra.stepDotInactive} />
                         <View style={cadastroExtra.stepLine} />
                         <View style={cadastroExtra.stepDotInactive} />
                     </View>
 
-                    {/* Linha dupla: Data de Fundação + Número de telefone */}
+                    {/* Linha dupla: Email + Senha */}
                     <View style={cadastroExtra.rowInputContainer}>
 
-                        {/* Data de Fundação */}
+                        {/* Email */}
                         <View style={cadastroExtra.halfInputWrapper}>
                             <Text style={cadastroExtra.labelSmall}>
-                                Data de Fundação
+                                Seu melhor e-mail
                             </Text>
                             <TextInput
-                                placeholder="DD/MM/AAAA"
+                                placeholder="Digite o seu e-mail"
                                 placeholderTextColor="rgba(255,255,255,0.35)"
-                                keyboardType="numeric"
-                                value={data}
-                                onChangeText={handleDataChange}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
                                 style={[
                                     cadastroExtra.inputField,
                                     isFocused1 && cadastroExtra.inputFieldFocused
@@ -127,52 +122,78 @@ export default function cadastro_two() {
                             />
                         </View>
 
-                        {/* Número de telefone */}
+                        {/* Senha */}
                         <View style={cadastroExtra.halfInputWrapper}>
                             <Text style={cadastroExtra.labelSmall}>
-                                Número de telefone
+                                Sua senha
                             </Text>
-                            <TextInput
-                                placeholder="(XX) 9XXXX-XXXX"
-                                placeholderTextColor="rgba(255,255,255,0.35)"
-                                keyboardType="phone-pad"
-                                value={telefone}
-                                onChangeText={handleTelefoneChange}
-                                style={[
-                                    cadastroExtra.inputField,
-                                    isFocused2 && cadastroExtra.inputFieldFocused
-                                ]}
-                                onFocus={() => setIsFocused2(true)}
-                                onBlur={() => setIsFocused2(false)}
-                            />
+                            <View style={[
+                                cadastroExtra.passwordWrapper,
+                                isFocused2 && cadastroExtra.passwordWrapperFocused
+                            ]}>
+                                <TextInput
+                                    placeholder="Crie uma senha forte"
+                                    placeholderTextColor="rgba(255,255,255,0.35)"
+                                    autoCapitalize="none"
+                                    autoCorrect={false}
+                                    textContentType="none"
+                                    autoComplete="off"
+                                    style={cadastroExtra.passwordInput}
+                                    onFocus={() => setIsFocused2(true)}
+                                    onBlur={() => setIsFocused2(false)}
+                                    secureTextEntry={isPasswordHidden}
+                                />
+                                <TouchableOpacity style={cadastroExtra.eyeIcon} onPress={passwordVisibility}>
+                                    <Ionicons
+                                        name={isPasswordHidden ? 'eye-off' : 'eye'}
+                                        size={20}
+                                        color="#A6FF00"
+                                    />
+                                </TouchableOpacity>
+                            </View>
                         </View>
 
                     </View>
 
-                    {/* Sobre a Empresa */}
+                    {/* Razão Social / Nome Fantasia */}
                     <Text style={cadastroExtra.labelSmall}>
-                        Sobre a Empresa
+                        Razão Social/Nome Fantasia
                     </Text>
                     <TextInput
-                        placeholder="Conte-nos um pouco mais sobre a empresa. Forneça o máximo de informações possíveis para colaborar com a ativação da sua conta Empresarial"
+                        placeholder="Digite o nome da sua empresa como consta no documento"
                         placeholderTextColor="rgba(255,255,255,0.35)"
-                        multiline
-                        numberOfLines={6}
-                        textAlignVertical="top"
                         style={[
-                            cadastroTwoExtra.textArea,
-                            isFocused3 && cadastroTwoExtra.textAreaFocused
+                            cadastroExtra.inputFieldFullWidth,
+                            isFocused3 && cadastroExtra.inputFieldFullWidthFocused
                         ]}
                         onFocus={() => setIsFocused3(true)}
                         onBlur={() => setIsFocused3(false)}
                     />
 
-                    {/* Botão Enviar respostas */}
+                    {/* CNPJ */}
+                    <Text style={cadastroExtra.labelSmall}>
+                        CNPJ
+                    </Text>
+                    <TextInput
+                        placeholder="XX.XXX.XXX/XXXX-XX"
+                        placeholderTextColor="rgba(255,255,255,0.35)"
+                        keyboardType="numeric"
+                        value={cnpj}
+                        onChangeText={handleCnpjChange}
+                        style={[
+                            cadastroExtra.inputFieldFullWidth,
+                            isFocused4 && cadastroExtra.inputFieldFullWidthFocused
+                        ]}
+                        onFocus={() => setIsFocused4(true)}
+                        onBlur={() => setIsFocused4(false)}
+                    />
+
+                    {/* Botão Próxima etapa */}
                     <TouchableOpacity onPress={() => {
-                        router.push('/cadastro_tree')
+                        router.push('/organizador/cadastro_step')
                     }} style={cadastroExtra.buttonProximaEtapa}>
                         <Text style={cadastroExtra.buttonProximaEtapaText}>
-                            Enviar respostas
+                            Próxima etapa
                         </Text>
                         <Ionicons
                             name={'arrow-forward-outline'}
@@ -182,7 +203,7 @@ export default function cadastro_two() {
                     </TouchableOpacity>
 
                   </View>
-
+                  
                   {/* Links */}
                   <Text style={extra.forgotPasswordText}>
                     Esqueceu sua senha? <Text style={ styles.underline } >Redefinir Senha</Text>

@@ -87,7 +87,7 @@ export default function LoginScreen() {
           {/* Botão organizador */}
           <TouchableOpacity 
           onPress={() => {
-            router.push('/cadastro_one');
+            router.push('/organizador/cadastro');
           }}
           style={styles.secondaryActionButton}>
             <View style={styles.buttonTextContainer}>

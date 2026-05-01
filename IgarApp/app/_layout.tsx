@@ -14,9 +14,9 @@ export default function RootLayout() {
     <Stack>
       <Stack.Screen name="index" options={{ title: "Home", headerShown: false }}/>
       <Stack.Screen name="login" options={{ title: "LoginScreen", headerShown: false }}/>
-      <Stack.Screen name="cadastro_one" options={{ title: "Cadastro", headerShown: false }}/>
-      <Stack.Screen name="cadastro_two" options={{ title: "CadastroTwo", headerShown: false }}/>
-      <Stack.Screen name="cadastro_tree" options={{ title: "CadastroTree", headerShown: false }}/>
+      <Stack.Screen name="organizador/cadastro" options={{ title: "Cadastro", headerShown: false }}/>
+      <Stack.Screen name="organizador/cadastro_step" options={{ title: "CadastroTwo", headerShown: false }}/>
+      <Stack.Screen name="organizador/cadastro_sucess" options={{ title: "CadastroTree", headerShown: false }}/>
     </Stack>
   );
 }
