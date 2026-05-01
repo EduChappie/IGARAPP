@@ -1,226 +1,232 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
 
-const extra = StyleSheet.create({
-  mainTitleText: {
-    fontSize: 28,
-    color: '#FFFFFF',
-    fontWeight: '600',
-    lineHeight: 30,
-    textAlign: "center"
-  },
-  subtitleDescriptionText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#CCCCCC',
-    lineHeight: 18,
-    textAlign: 'center'
-  },
-  forgotPasswordText: {
-    fontSize: 13,
-    color: '#BBBBBB',
-    marginBottom: 10,
-    textAlign: 'center'
-  },
-  termsAndPrivacyText: {
-    fontSize: 12,
-    color: '#888888',
-    lineHeight: 16,
-    textAlign: 'center'
-  },
-  topContentContainer: {
-    paddingHorizontal: 24,
-    paddingTop: 100,
-    alignItems: 'center'
-  },
-  bottomActionContainer: {
-    height: '70%',
-    backgroundColor: '#012A36',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    padding: 20,
-    paddingBottom: 30,
-  },
-  inputFiled: {
-    backgroundColor: 'rgba(0, 44, 59, 1)',
-    color: 'rgba(255, 255, 255, 0.7)',
-    borderRadius: 10,
-    marginTop: 10,
-    marginBottom: 10,
-    padding: 12,
-    fontSize: 18,
-    width: '100%',
-  },
-  eye: {
-    position: 'relative',
-    top: 20,
-    right: '12%'
-  },
-  inputFocused1: {
-    borderColor: '#A6FF00',
-    borderWidth: 2,
-  },
-  inputFocused2: {
-    borderColor: '#A6FF00',
-    borderWidth: 2,
-  },
-  inputContainer: {
-    marginBottom: 10,
-    flexDirection: 'row',
-  },
+const { height } = Dimensions.get('window');
 
-  buttonSubmit: {
-    color: 'black',
-    fontSize: 15,
-  },
-
-  label: {
-    color: 'rgba(255, 255, 255, 0.7)',
-    marginTop: 5,
-    marginLeft: 10,
-  },
-
-  topContentContainerFocus: {
-    paddingHorizontal: 24,
-    paddingTop: 90,
-  },
-  bottomActionContainerFocus: {
-    height: '70%',
-    backgroundColor: '#012A36',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    padding: 20,
-    paddingBottom: 30,
-  },
-})
-
-const styles = StyleSheet.create({
+export const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#012A36', 
   },
-
   backgroundImage: {
     flex: 1,
-    justifyContent: 'space-between',
-  },
-
-  backgroundImageStyle: {
-    transform: [{
-        translateY: -300
-    }]
-  },
-
-  backgroundGradientOverlay: {
-    position: 'absolute',
-    bottom: 0,
     width: '100%',
     height: '100%',
   },
-
+  backgroundImageStyle: {
+    opacity: 0.8, 
+  },
+  backgroundGradientOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+  },
   topContentContainer: {
-    paddingHorizontal: 24,
-    paddingTop: 290,
+    paddingHorizontal: 18,
+    // Subimos a informação (antes era 0.45, agora 0.32) para caber sem scroll
+    paddingTop: height * 0.32, 
+    alignItems: 'flex-start',
   },
-
   applicationLogoImage: {
-    width: 48,
-    height: 48,
-    marginBottom: 20,
-  },
-
-  mainTitleText: {
-    fontSize: 28,
-    color: '#FFFFFF',
-    fontWeight: '600',
-    lineHeight: 30,
-  },
-
-  highlightedText: {
-    color: '#A6FF00',
-    fontFamily: 'Times New Roman',
-    fontStyle: 'italic',
-  },
-
-  subtitleDescriptionText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#CCCCCC',
-    lineHeight: 18,
-  },
-
-  bottomActionContainer: {
-    height: '42%',
-    backgroundColor: '#012A36',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    padding: 20,
-    paddingBottom: 30,
-  },
-
-  primaryActionButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#0A3D4A',
+    width: 60,
+    height: 60,
     borderRadius: 16,
-    padding: 16,
+    marginBottom: 24,
+  },
+  mainTitleText: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: '700', 
+    lineHeight: 28,
     marginBottom: 12,
   },
-
-  secondaryActionButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#0A3D4A',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+  highlightedText: {
+    color: '#A6FF00', 
+    fontStyle: 'italic',
+    fontWeight: '700',
   },
-
-  buttonTextContainer: {
-    flexDirection: 'column',
-    paddingLeft: '5%'
-  },
-
-  buttonSmallLabelText: {
+  subtitleDescriptionText: {
+    color: '#A0B3B8',
     fontSize: 14,
-    color: '#A6FF00',
+    lineHeight: 20,
+    marginBottom: 32,
+    fontWeight: '400',
+  },
+  bottomActionContainer: {
+    paddingHorizontal: 14,
+    flex: 1,
+    justifyContent: 'flex-end',
+    paddingBottom: 30,
+  },
+  // Botões maiores
+  primaryActionButton: {
+    backgroundColor: 'rgba(1, 42, 54, 0.8)', 
+    borderRadius: 24, // Bordas um pouco mais arredondadas
+    paddingVertical: 24, // Botão mais alto
+    paddingHorizontal: 24, // Espaçamento interno maior
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 100, 130, 0.8)', 
+  },
+  secondaryActionButton: {
+    backgroundColor: 'rgba(1, 42, 54, 0.8)',
+    borderRadius: 24,
+    paddingVertical: 24,
+    paddingHorizontal: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 100, 130, 0.8)',
+  },
+  buttonTextContainer: {
+    flex: 1,
+  },
+  buttonSmallLabelText: {
+    color: '#A6FF00', 
+    fontSize: 13, // Levemente maior
+    fontWeight: '600',
     marginBottom: 4,
   },
-
   buttonMainText: {
-    fontSize: 21,
     color: '#FFFFFF',
-    fontWeight: '600',
+    fontSize: 24, // Fonte aumentada
+    fontWeight: '800',
   },
-
+  // Ícones maiores
   buttonIconImage: {
-    width: 50,
-    height: 50,
-    marginRight: '5%',
-    transform: [{
-        scale: 1.5
-    }]
+    width: 65, 
+    height: 65,
+    resizeMode: 'contain',
   },
-
   forgotPasswordText: {
-    fontSize: 13,
-    color: '#BBBBBB',
-    marginBottom: 10,
-  },
-
-  termsAndPrivacyText: {
+    color: '#A0B3B8',
     fontSize: 12,
-    color: '#888888',
-    lineHeight: 16,
+    textAlign: 'center',
+    marginBottom: 16,
   },
-
-  destaque: {
-    color: '#EEE82C'
+  termsAndPrivacyText: {
+    color: '#A0B3B8',
+    fontSize: 11,
+    textAlign: 'center',
+    lineHeight: 18,
   },
   underline: {
-    textDecorationLine: 'underline'
+    textDecorationLine: 'underline',
+    color: '#FFFFFF',
+  },
+  destaque: {
+    color: '#A6FF00',
+    fontWeight: 'bold',
   }
 });
 
-export { styles, extra }
+// Estilos extras (mantidos iguais à última versão)
+export const extra = StyleSheet.create({
+  topContentContainer: {
+    paddingHorizontal: 24,
+    paddingTop: height * 0.35, 
+    alignItems: 'center', 
+  },
+  topContentContainerFocus: {
+    paddingTop: height * 0.10, 
+  },
+  mainTitleText: {
+    color: '#FFFFFF',
+    fontSize: 26,
+    fontWeight: '700',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  subtitleDescriptionText: {
+    color: '#A0B3B8',
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  bottomActionContainer: {
+    paddingHorizontal: 24,
+    flex: 1,
+    justifyContent: 'flex-start',
+    width: '100%',
+  },
+  bottomActionContainerFocus: {
+  },
+  label: {
+    color: '#FFFFFF', 
+    fontSize: 12,
+    marginBottom: 8,
+    opacity: 0.8,
+  },
+  inputFiled: { 
+    backgroundColor: 'rgba(1, 42, 54, 0.8)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 100, 130, 0.6)',
+    color: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    fontSize: 14,
+    width: '100%',
+    marginBottom: 10,
+  },
+  inputContainer: { 
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(1, 42, 54, 0.8)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 100, 130, 0.6)',
+    marginBottom: 24,
+  },
+  inputFiledInside: {
+    flex: 1,
+    color: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    fontSize: 14,
+  },
+  inputFocused1: {
+    borderColor: '#A6FF00',
+  },
+  inputFocused2: {
+    borderColor: '#A6FF00',
+  },
+  eye: {
+    paddingHorizontal: 16,
+  },
+  buttonSubmit: {
+    backgroundColor: '#E8ECEE', 
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+  },
+  buttonSubmitText: {
+    color: '#000000',
+    fontWeight: '600',
+    fontSize: 16,
+    marginRight: 8,
+  },
+  forgotPasswordText: {
+    color: '#A0B3B8',
+    fontSize: 12,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  termsAndPrivacyText: {
+    color: '#A0B3B8',
+    fontSize: 11,
+    textAlign: 'center',
+    lineHeight: 18,
+  }
+});
