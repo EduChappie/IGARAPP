@@ -70,7 +70,7 @@ export default function LoginScreen() {
           {/* Botão voluntário */}
           <TouchableOpacity 
           onPress={() => {
-            router.push('/login')
+            router.push('/voluntario/cadastro')
           }}
           style={styles.primaryActionButton}>
             <View style={styles.buttonTextContainer}>
