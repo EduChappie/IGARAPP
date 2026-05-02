@@ -1,95 +1,164 @@
+import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ImageBackground,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
   SafeAreaView,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import FishIcon from "../src/components/icons/FishIcon";
 
 export default function RecuperarSenhaEmailScreen() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
 
+  const isValidEmail = email.includes("@") && email.includes(".");
+
   return (
-    <ImageBackground
-      source={require("../src/assets/imagem_fundo.png")}
-      style={styles.backgroundImage}
-      resizeMode="cover" // Removemos o blurRadius daqui! O blur agora vem direto da imagem exportada.
-      imageStyle={{
-        top: -10,
-        left: -2,
-        transform: [{ scale: 1.03 }],
-      }}
-    >
-      <LinearGradient
-        colors={["transparent", "rgba(0, 26, 35, 0.7)", "#001A23", "#001A23"]}
-        locations={[0, 0.4, 0.8, 1]}
-        style={styles.overlay}
+    <View style={{ flex: 1, backgroundColor: "#001A23" }}>
+      {/* CAMADA 1 */}
+      <ImageBackground
+        source={require("../src/assets/imagem_tree_fundo.jpeg")}
+        style={StyleSheet.absoluteFillObject}
+        resizeMode="cover"
+        imageStyle={{ transform: [{ scale: 1.0 }, { translateY: -230 }] }}
       />
 
-      <SafeAreaView style={styles.container}>
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor="transparent"
-          translucent
+      {/* CAMADA 2 */}
+      <MaskedView
+        style={StyleSheet.absoluteFillObject}
+        maskElement={
+          <LinearGradient
+            colors={["transparent", "#FFFFFF"]}
+            locations={[0, 1.0]}
+            style={StyleSheet.absoluteFillObject}
+          />
+        }
+      >
+        <ImageBackground
+          source={require("../src/assets/imagem_tree_fundo.jpeg")}
+          style={StyleSheet.absoluteFillObject}
+          resizeMode="cover"
+          blurRadius={Platform.OS === "web" ? 5 : 15}
+          imageStyle={{ transform: [{ scale: 1.0 }, { translateY: -230 }] }}
         />
+      </MaskedView>
 
-        <View style={styles.content}>
-          <View style={styles.headerContainer}>
-            <View style={styles.logoContainer}>
-              <FishIcon width={50} height={50} />
-            </View>
+      {/* CAMADA 3 */}
+      <LinearGradient
+        colors={["transparent", "rgba(0, 26, 35, 0.7)", "#001A23", "#001A23"]}
+        locations={[0.1, 0.4, 0.65, 1]}
+        style={StyleSheet.absoluteFillObject}
+      />
 
-            <Text style={styles.title}>Recuperar senha...</Text>
-            <Text style={styles.subtitle}>
-              Você se esqueceu da sua senha, mas nós{"\n"}vamos nos ajudar a
-              recuperá-la!
-            </Text>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Endereço de E-mail</Text>
-            <View style={styles.inputContainer}>
-              {/* Ícone da Esquerda */}
-              <EmailOutlineIcon />
-
-              {/* Input Central */}
-              <TextInput
-                style={styles.textInput}
-                placeholder="Digite o seu e-mail (seuemail@dominio.com)"
-                placeholderTextColor="rgba(255, 255, 255, 0.7)"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={setEmail}
+      {/* CAMADA 4: Proteção contra o teclado */}
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 20 : -130}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1 }}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+            showsVerticalScrollIndicator={false}
+          >
+            <SafeAreaView style={{ flex: 1 }}>
+              <StatusBar
+                barStyle="light-content"
+                backgroundColor="transparent"
+                translucent
               />
 
-              {/* Ícone da Direita */}
-              <CheckIcon />
-            </View>
-          </View>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => router.back()}
+              >
+                <BackArrowIcon />
+              </TouchableOpacity>
 
-          <TouchableOpacity style={styles.primaryButton}>
-            <View style={styles.buttonContentRow}>
-              <Text style={styles.primaryButtonText}>Criar nova senha</Text>
-              <ArrowIcon color="#001A23" />
-            </View>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    </ImageBackground>
+              <View style={styles.content}>
+                <View style={styles.headerContainer}>
+                  <View style={styles.logoContainer}>
+                    <FishIcon width={50} height={50} />
+                  </View>
+
+                  <Text style={styles.title}>Recuperar senha...</Text>
+                  <Text style={styles.subtitle}>
+                    Você se esqueceu da sua senha, mas nós{"\n"}vamos nos ajudar
+                    a recuperá-la!
+                  </Text>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Endereço de E-mail</Text>
+                  <View style={styles.inputContainer}>
+                    <EmailOutlineIcon />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Digite o seu e-mail (seuemail@dominio.com)"
+                      placeholderTextColor="rgba(255, 255, 255, 0.7)"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      value={email}
+                      onChangeText={setEmail}
+                    />
+                    <CheckIcon />
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={[
+                    styles.primaryButton,
+                    !isValidEmail && { opacity: 0.7 },
+                  ]}
+                  disabled={!isValidEmail}
+                  onPress={() => router.push("/confirmar-codigo")}
+                >
+                  <View style={styles.buttonContentRow}>
+                    <Text style={styles.primaryButtonText}>
+                      Criar nova senha
+                    </Text>
+                    <ArrowIcon color="#001A23" />
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </SafeAreaView>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 // ==========================================
 // ÍCONES SVG INLINE
 // ==========================================
+const BackArrowIcon = () => (
+  <Svg width="20" height="17" viewBox="0 0 20 17" fill="none">
+    <Path
+      d="M8.25 15.75L0.75 8.25M0.75 8.25L8.25 0.75M0.75 8.25H18.75"
+      stroke="#F8F9FA"
+      strokeOpacity="0.8"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
 const ArrowIcon = ({ color }: { color: string }) => (
   <Svg width="19" height="19" viewBox="0 0 19 19" fill="none">
@@ -129,21 +198,21 @@ const CheckIcon = () => (
   </Svg>
 );
 
-// ==========================================
-// ESTILOS
-// ==========================================
-
 const styles = StyleSheet.create({
-  backgroundImage: {
-    flex: 1,
-    width: "100%",
-    height: "100%",
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
+  backgroundImage: { flex: 1, width: "100%", height: "100%" },
+  overlay: { ...StyleSheet.absoluteFillObject },
   container: {
     flex: 1,
+    width: "100%",
+    maxWidth: 480,
+    alignSelf: "center",
+  },
+  backButton: {
+    position: "absolute",
+    top: 50,
+    left: 24,
+    zIndex: 10,
+    padding: 10,
   },
   content: {
     flex: 1,
@@ -151,13 +220,8 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     paddingBottom: 150,
   },
-  headerContainer: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  logoContainer: {
-    marginBottom: 20,
-  },
+  headerContainer: { alignItems: "center", marginBottom: 20 },
+  logoContainer: { marginBottom: 20 },
   title: {
     fontSize: 24,
     fontWeight: "500",
@@ -172,9 +236,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 18,
   },
-  inputGroup: {
-    marginBottom: 10,
-  },
+  inputGroup: { marginBottom: 10 },
   inputLabel: {
     fontSize: 12,
     fontWeight: "300",
@@ -197,7 +259,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "300",
-    marginHorizontal: 10, // Adicionado para dar espaço entre o texto e os ícones laterais
+    marginHorizontal: 10,
   },
   primaryButton: {
     flexDirection: "row",
@@ -212,14 +274,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 3,
     borderBottomColor: "rgba(0, 40, 45, 0.25)",
   },
-  buttonContentRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  primaryButtonText: {
-    fontSize: 12,
-    fontWeight: "300",
-    color: "#001A23",
-  },
+  buttonContentRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  primaryButtonText: { fontSize: 12, fontWeight: "300", color: "#001A23" },
 });

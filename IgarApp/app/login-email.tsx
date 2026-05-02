@@ -1,29 +1,32 @@
+import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
   SafeAreaView,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import FishIcon from "../src/components/icons/FishIcon";
 
-// Criando o componente animado para o botão
 const AnimatedTouchableOpacity =
   Animated.createAnimatedComponent(TouchableOpacity);
 
 export default function LoginEmailScreen() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
-  // --- VALIDAÇÃO E ANIMAÇÃO DO BOTÃO ---
-  // O botão só ativa se tiver um e-mail com '@' e '.' e uma senha de pelo menos 6 caracteres
   const isValidEmail = email.includes("@") && email.includes(".");
   const isButtonActive = isValidEmail && password.length >= 6;
 
@@ -37,116 +40,151 @@ export default function LoginEmailScreen() {
     }).start();
   }, [isButtonActive]);
 
-  // Transição: Verde Escuro -> Amarelo Destaque
   const buttonBackgroundColor = buttonAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ["#203422", "#EEE82C"],
   });
 
-  // Transição do Texto: Apagado -> Azul Escuro
   const buttonTextColor = buttonAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ["#3D523B", "#001A23"],
   });
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#001A23" />
-
-      <View style={styles.content}>
-        {/* --- CABEÇALHO --- */}
-        <View style={styles.headerContainer}>
-          <View style={styles.logoContainer}>
-            <FishIcon width={50} height={50} />
-          </View>
-          <Text style={styles.title}>Bem vindo de volta</Text>
-          <Text style={styles.subtitle}>
-            Coloque o seu número de telefone associado a sua{"\n"}conta{" "}
-            <Text style={{ fontWeight: "500", color: "#E8F1F2" }}>IgarApp</Text>
-          </Text>
-        </View>
-
-        {/* --- CAMPO DE E-MAIL --- */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Seu e-mail cadastrado</Text>
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Digite o seu e-mail (seuemail@dominio.com)"
-              placeholderTextColor="rgba(255, 255, 255, 0.7)"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-            />
-          </View>
-        </View>
-
-        {/* --- CAMPO DE SENHA --- */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Sua senha</Text>
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={[styles.textInput, { flex: 1 }]}
-              placeholder="Digite aqui a sua senha"
-              placeholderTextColor="rgba(255, 255, 255, 0.7)"
-              secureTextEntry={!isPasswordVisible}
-              value={password}
-              onChangeText={setPassword}
-            />
-            {/* Botão do Olhinho */}
-            <TouchableOpacity
-              style={styles.eyeButton}
-              onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-            >
-              <EyeIcon />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* --- BOTÃO ANIMADO CONTINUAR --- */}
-        <AnimatedTouchableOpacity
-          style={[
-            styles.primaryButton,
-            { backgroundColor: buttonBackgroundColor },
-            isButtonActive && styles.primaryButtonActive, // Adiciona sombra se ativo
-          ]}
-          disabled={!isButtonActive}
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.buttonContentRow}>
-            <Animated.Text
-              style={[styles.primaryButtonText, { color: buttonTextColor }]}
+          <SafeAreaView style={{ flex: 1 }}>
+            <StatusBar barStyle="light-content" backgroundColor="#001A23" />
+
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.back()}
             >
-              Continuar
-            </Animated.Text>
-            <ArrowIcon color={isButtonActive ? "#001A23" : "#3D523B"} />
-          </View>
-        </AnimatedTouchableOpacity>
+              <BackArrowIcon />
+            </TouchableOpacity>
 
-        {/* --- RODAPÉ: LINKS EXTRAS --- */}
-        <View style={styles.footerLinksContainer}>
-          <TouchableOpacity style={{ marginBottom: 24 }}>
-            <Text style={styles.forgotPasswordText}>
-              Esqueceu sua senha?{" "}
-              <Text style={{ color: "#FFFFFF" }}>Redefinir Senha</Text>
-            </Text>
-          </TouchableOpacity>
+            <View style={styles.content}>
+              <View style={styles.headerContainer}>
+                <View style={styles.logoContainer}>
+                  <FishIcon width={50} height={50} />
+                </View>
+                <Text style={styles.title}>Bem vindo de volta</Text>
+                <Text style={styles.subtitle}>
+                  Coloque o seu e-mail associado a sua{"\n"}conta{" "}
+                  <Text style={{ fontWeight: "500", color: "#E8F1F2" }}>
+                    IgarApp
+                  </Text>
+                </Text>
+              </View>
 
-          <Text style={styles.termsText}>
-            Ao criar sua conta no <Text style={styles.yellowText}>IgarApp</Text>
-            , você estará concordando
-            {"\n"}com os <Text style={styles.yellowText}>Termos de Uso</Text> e{" "}
-            <Text style={styles.yellowText}>Política de Privacidade</Text>
-          </Text>
-        </View>
-      </View>
-    </SafeAreaView>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Seu e-mail cadastrado</Text>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Digite o seu e-mail (seuemail@dominio.com)"
+                    placeholderTextColor="rgba(255, 255, 255, 0.7)"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    value={email}
+                    onChangeText={setEmail}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Sua senha</Text>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={[styles.textInput, { flex: 1 }]}
+                    placeholder="Digite aqui a sua senha"
+                    placeholderTextColor="rgba(255, 255, 255, 0.7)"
+                    secureTextEntry={!isPasswordVisible}
+                    value={password}
+                    onChangeText={setPassword}
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeButton}
+                    onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+                  >
+                    <EyeIcon />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <AnimatedTouchableOpacity
+                style={[
+                  styles.primaryButton,
+                  { backgroundColor: buttonBackgroundColor },
+                  isButtonActive && styles.primaryButtonActive,
+                ]}
+                disabled={!isButtonActive}
+              >
+                <View style={styles.buttonContentRow}>
+                  <Animated.Text
+                    style={[
+                      styles.primaryButtonText,
+                      { color: buttonTextColor },
+                    ]}
+                  >
+                    Continuar
+                  </Animated.Text>
+                  <ArrowIcon color={isButtonActive ? "#001A23" : "#3D523B"} />
+                </View>
+              </AnimatedTouchableOpacity>
+
+              <View style={styles.footerLinksContainer}>
+                <TouchableOpacity
+                  style={{ marginBottom: 24 }}
+                  onPress={() => router.push("/recuperar-senha-email")}
+                >
+                  <Text style={styles.forgotPasswordText}>
+                    Esqueceu sua senha?{" "}
+                    <Text style={{ color: "#FFFFFF" }}>Redefinir Senha</Text>
+                  </Text>
+                </TouchableOpacity>
+
+                <Text style={styles.termsText}>
+                  Ao criar sua conta no{" "}
+                  <Text style={styles.yellowText}>IgarApp</Text>, você estará
+                  concordando
+                  {"\n"}com os{" "}
+                  <Text style={styles.yellowText}>Termos de Uso</Text> e{" "}
+                  <Text style={styles.yellowText}>Política de Privacidade</Text>
+                </Text>
+              </View>
+            </View>
+          </SafeAreaView>
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
 // ==========================================
 // ÍCONES SVG INLINE
 // ==========================================
+const BackArrowIcon = () => (
+  <Svg width="20" height="17" viewBox="0 0 20 17" fill="none">
+    <Path
+      d="M8.25 15.75L0.75 8.25M0.75 8.25L8.25 0.75M0.75 8.25H18.75"
+      stroke="#F8F9FA"
+      strokeOpacity="0.8"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
 const ArrowIcon = ({ color }: { color: string }) => (
   <Svg width="19" height="19" viewBox="0 0 19 19" fill="none">
@@ -167,22 +205,29 @@ const EyeIcon = () => (
   </Svg>
 );
 
-// ==========================================
-// ESTILOS
-// ==========================================
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#001A23",
+    width: "100%",
+    maxWidth: 480,
+    alignSelf: "center",
+  },
+  backButton: {
+    position: "absolute",
+    top: 50,
+    left: 24,
+    zIndex: 10,
+    padding: 10,
   },
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 80, // Subi um pouco para o logo respirar melhor
+    paddingTop: 80,
   },
   headerContainer: {
     marginBottom: 20,
+    marginTop: 20,
   },
   logoContainer: {
     marginBottom: 24,
@@ -256,7 +301,7 @@ const styles = StyleSheet.create({
   },
   footerLinksContainer: {
     alignItems: "center",
-    marginTop: "auto", // Joga os links de rodapé para baixo
+    marginTop: "auto",
     marginBottom: 60,
   },
   forgotPasswordText: {

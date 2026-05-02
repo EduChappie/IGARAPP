@@ -1,15 +1,21 @@
+import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   ImageBackground,
   Keyboard,
+  KeyboardAvoidingView,
+  Platform,
   SafeAreaView,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
@@ -19,12 +25,12 @@ const AnimatedTouchableOpacity =
   Animated.createAnimatedComponent(TouchableOpacity);
 
 export default function ConfirmarCodigoScreen() {
+  const router = useRouter();
   const [code, setCode] = useState("");
   const [isFocused, setIsFocused] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(49); // Cronômetro iniciando em 49s
+  const [timeLeft, setTimeLeft] = useState(49);
   const inputRef = useRef<TextInput>(null);
 
-  // --- LÓGICA DO CRONÔMETRO ---
   useEffect(() => {
     if (timeLeft > 0) {
       const timerId = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
@@ -32,10 +38,8 @@ export default function ConfirmarCodigoScreen() {
     }
   }, [timeLeft]);
 
-  // Formata o tempo para "00:XX"
   const formattedTime = `00:${timeLeft < 10 ? `0${timeLeft}` : timeLeft}`;
 
-  // --- LÓGICA DE VALIDAÇÃO E ANIMAÇÃO DO BOTÃO ---
   const isComplete = code.length === 6;
   const buttonAnim = useRef(new Animated.Value(0)).current;
 
@@ -57,147 +61,183 @@ export default function ConfirmarCodigoScreen() {
     outputRange: ["#3D523B", "#001A23"],
   });
 
-  // Garante que só números sejam digitados
   const handleCodeChange = (text: string) => {
     const numericValue = text.replace(/[^0-9]/g, "");
     setCode(numericValue);
   };
 
   return (
-    <ImageBackground
-      source={require("../src/assets/imagem_fundo.png")}
-      style={styles.backgroundImage}
-      resizeMode="cover"
-      imageStyle={{
-        top: -10,
-        left: -2,
-        transform: [{ scale: 1.03 }],
-      }}
-    >
-      <LinearGradient
-        colors={["transparent", "rgba(0, 26, 35, 0.7)", "#001A23", "#001A23"]}
-        locations={[0, 0.4, 0.8, 1]}
-        style={styles.overlay}
+    <View style={{ flex: 1, backgroundColor: "#001A23" }}>
+      {/* CAMADA 1 */}
+      <ImageBackground
+        source={require("../src/assets/imagem_tree_fundo.jpeg")}
+        style={StyleSheet.absoluteFillObject}
+        resizeMode="cover"
+        imageStyle={{ transform: [{ scale: 1.0 }, { translateY: -230 }] }}
       />
 
-      <SafeAreaView style={styles.container}>
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor="transparent"
-          translucent
+      {/* CAMADA 2 */}
+      <MaskedView
+        style={StyleSheet.absoluteFillObject}
+        maskElement={
+          <LinearGradient
+            colors={["transparent", "#FFFFFF"]}
+            locations={[0, 1.0]}
+            style={StyleSheet.absoluteFillObject}
+          />
+        }
+      >
+        <ImageBackground
+          source={require("../src/assets/imagem_tree_fundo.jpeg")}
+          style={StyleSheet.absoluteFillObject}
+          resizeMode="cover"
+          blurRadius={Platform.OS === "web" ? 5 : 15}
+          imageStyle={{ transform: [{ scale: 1.0 }, { translateY: -230 }] }}
         />
+      </MaskedView>
 
-        <View style={styles.content}>
-          {/* --- LOGO E TÍTULO PRINCIPAL --- */}
-          <View style={styles.headerContainer}>
-            <View style={styles.logoContainer}>
-              <FishIcon width={50} height={50} />
-            </View>
-            <Text style={styles.title}>Recuperar senha...</Text>
-          </View>
+      {/* CAMADA 3 */}
+      <LinearGradient
+        colors={["transparent", "rgba(0, 26, 35, 0.7)", "#001A23", "#001A23"]}
+        locations={[0.1, 0.4, 0.65, 1]}
+        style={StyleSheet.absoluteFillObject}
+      />
 
-          {/* --- SUB-CABEÇALHO COM NAVEGAÇÃO --- */}
-          <View style={styles.navigationRow}>
-            <TouchableOpacity style={styles.iconButton}>
-              <BackArrowIcon />
-            </TouchableOpacity>
-            <Text style={styles.subtitleTitle}>Confirmar código</Text>
-            <TouchableOpacity style={styles.iconButton}>
-              <CloseIcon />
-            </TouchableOpacity>
-          </View>
+      {/* CAMADA 4: Proteção contra o teclado */}
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 20 : -99}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1 }}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+            showsVerticalScrollIndicator={false}
+          >
+            <SafeAreaView style={{ flex: 1 }}>
+              <StatusBar
+                barStyle="light-content"
+                backgroundColor="transparent"
+                translucent
+              />
 
-          {/* --- BLOCOS DE CÓDIGO (OTP) --- */}
-          <View style={styles.otpContainer}>
-            {/* O TextInput Invisível que capta a digitação */}
-            <TextInput
-              ref={inputRef}
-              value={code}
-              onChangeText={handleCodeChange}
-              maxLength={6}
-              keyboardType="number-pad"
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              style={styles.hiddenInput}
-              caretHidden={true} // Esconde o cursor nativo
-              autoFocus={true}
-            />
+              <View style={styles.content}>
+                <View style={styles.headerContainer}>
+                  <View style={styles.logoContainer}>
+                    <FishIcon width={50} height={50} />
+                  </View>
+                  <Text style={styles.title}>Recuperar senha...</Text>
+                </View>
 
-            {/* Os 6 blocos visuais gerados automaticamente */}
-            {[0, 1, 2, 3, 4, 5].map((index) => {
-              const char = code[index];
-              const isFilled = !!char;
-              const isCurrentBox = isFocused && code.length === index;
+                <View style={styles.navigationRow}>
+                  <TouchableOpacity
+                    style={styles.iconButton}
+                    onPress={() => router.back()}
+                  >
+                    <BackArrowIcon />
+                  </TouchableOpacity>
 
-              return (
-                <TouchableOpacity
-                  key={index}
-                  activeOpacity={1}
-                  onPress={() => inputRef.current?.focus()}
+                  <Text style={styles.subtitleTitle}>Confirmar código</Text>
+
+                  <TouchableOpacity
+                    style={styles.iconButton}
+                    onPress={() => router.push("/login-email")}
+                  >
+                    <CloseIcon />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.otpContainer}>
+                  <TextInput
+                    ref={inputRef}
+                    value={code}
+                    onChangeText={handleCodeChange}
+                    maxLength={6}
+                    keyboardType="number-pad"
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    style={styles.hiddenInput}
+                    caretHidden={true}
+                    autoFocus={Platform.OS !== "web"}
+                  />
+
+                  {[0, 1, 2, 3, 4, 5].map((index) => {
+                    const char = code[index];
+                    const isFilled = !!char;
+                    const isCurrentBox = isFocused && code.length === index;
+
+                    return (
+                      <TouchableOpacity
+                        key={index}
+                        activeOpacity={1}
+                        onPress={() => inputRef.current?.focus()}
+                        style={[
+                          styles.codeBox,
+                          isFilled && styles.codeBoxFilled,
+                        ]}
+                      >
+                        {isFilled ? (
+                          <Text style={styles.codeText}>{char}</Text>
+                        ) : isCurrentBox ? (
+                          <View style={styles.cursor} />
+                        ) : null}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <Text style={styles.instructionText}>
+                  Um código de 6 dígitos foi enviado para{"\n"}
+                  <Text style={styles.emailText}>seuemail@dominio.com</Text>
+                </Text>
+
+                <AnimatedTouchableOpacity
                   style={[
-                    styles.codeBox,
-                    isFilled && styles.codeBoxFilled, // Fica amarelo se tiver número
+                    styles.primaryButton,
+                    { backgroundColor: buttonBackgroundColor },
                   ]}
+                  disabled={!isComplete}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    router.push("/recuperar-senha");
+                  }}
                 >
-                  {isFilled ? (
-                    <Text style={styles.codeText}>{char}</Text>
-                  ) : isCurrentBox ? (
-                    // O cursor amarelo simulado do Figma
-                    <View style={styles.cursor} />
-                  ) : null}
+                  <View style={styles.buttonContentRow}>
+                    <Animated.Text
+                      style={[
+                        styles.primaryButtonText,
+                        { color: buttonTextColor },
+                      ]}
+                    >
+                      Continuar
+                    </Animated.Text>
+                    <ArrowIcon color={isComplete ? "#001A23" : "#3D523B"} />
+                  </View>
+                </AnimatedTouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.resendContainer}
+                  disabled={timeLeft > 0}
+                >
+                  <Text style={styles.resendText}>
+                    Reenviar código{" "}
+                    <Text style={styles.timerText}>({formattedTime})</Text>
+                  </Text>
                 </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {/* --- TEXTO DE INSTRUÇÃO --- */}
-          <Text style={styles.instructionText}>
-            Um código de 6 dígitos foi enviado para{"\n"}
-            <Text style={styles.emailText}>seuemail@dominio.com</Text>
-          </Text>
-
-          {/* --- BOTÃO ANIMADO CONTINUAR --- */}
-          <AnimatedTouchableOpacity
-            style={[
-              styles.primaryButton,
-              { backgroundColor: buttonBackgroundColor },
-            ]}
-            disabled={!isComplete}
-            onPress={() => {
-              Keyboard.dismiss();
-              // Adicione a navegação aqui depois
-            }}
-          >
-            <View style={styles.buttonContentRow}>
-              <Animated.Text
-                style={[styles.primaryButtonText, { color: buttonTextColor }]}
-              >
-                Continuar
-              </Animated.Text>
-              <ArrowIcon color={isComplete ? "#001A23" : "#3D523B"} />
-            </View>
-          </AnimatedTouchableOpacity>
-
-          {/* --- RODAPÉ DE REENVIO --- */}
-          <TouchableOpacity
-            style={styles.resendContainer}
-            disabled={timeLeft > 0}
-          >
-            <Text style={styles.resendText}>
-              Reenviar código{" "}
-              <Text style={styles.timerText}>({formattedTime})</Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    </ImageBackground>
+              </View>
+            </SafeAreaView>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 // ==========================================
 // ÍCONES SVG INLINE
 // ==========================================
-
 const BackArrowIcon = () => (
   <Svg width="20" height="17" viewBox="0 0 20 17" fill="none">
     <Path
@@ -233,21 +273,14 @@ const ArrowIcon = ({ color }: { color: string }) => (
   </Svg>
 );
 
-// ==========================================
-// ESTILOS
-// ==========================================
-
 const styles = StyleSheet.create({
-  backgroundImage: {
-    flex: 1,
-    width: "100%",
-    height: "100%",
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
+  backgroundImage: { flex: 1, width: "100%", height: "100%" },
+  overlay: { ...StyleSheet.absoluteFillObject },
   container: {
     flex: 1,
+    width: "100%",
+    maxWidth: 480,
+    alignSelf: "center",
   },
   content: {
     flex: 1,
@@ -255,18 +288,13 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     paddingBottom: 20,
   },
-  headerContainer: {
-    alignItems: "center",
-    marginBottom: 0,
-  },
-  logoContainer: {
-    marginBottom: 10,
-  },
+  headerContainer: { alignItems: "center", marginBottom: 0 },
+  logoContainer: { marginBottom: 10 },
   title: {
     fontSize: 24,
     fontWeight: "500",
     color: "#E8F1F2",
-    marginBottom: 10, // Um respiro extra aqui pro subtítulo
+    marginBottom: 10,
     textAlign: "center",
   },
   navigationRow: {
@@ -274,7 +302,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 30,
-    paddingHorizontal: 10, // Afasta um pouco das bordas do celular
+    paddingHorizontal: 10,
   },
   iconButton: {
     width: 24,
@@ -299,7 +327,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     opacity: 0,
-    zIndex: 999, // Fica invisível por cima garantindo o clique em qualquer lugar da fileira
+    zIndex: 999,
   },
   codeBox: {
     width: 49,
@@ -314,22 +342,14 @@ const styles = StyleSheet.create({
   codeBoxFilled: {
     backgroundColor: "#EEE82C",
     borderColor: "#EEE82C",
-    elevation: 3, // Sombra suave no Android
-    shadowColor: "#00282D", // Sombra suave no iOS
+    elevation: 3,
+    shadowColor: "#00282D",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 1,
   },
-  codeText: {
-    fontSize: 20,
-    fontWeight: "400",
-    color: "#001A23",
-  },
-  cursor: {
-    width: 2,
-    height: 17,
-    backgroundColor: "#EEE82C",
-  },
+  codeText: { fontSize: 20, fontWeight: "400", color: "#001A23" },
+  cursor: { width: 2, height: 17, backgroundColor: "#EEE82C" },
   instructionText: {
     fontSize: 12,
     fontWeight: "300",
@@ -338,10 +358,7 @@ const styles = StyleSheet.create({
     marginBottom: 22,
     lineHeight: 18,
   },
-  emailText: {
-    fontWeight: "400",
-    color: "#FFFFFF",
-  },
+  emailText: { fontWeight: "400", color: "#FFFFFF" },
   primaryButton: {
     flexDirection: "row",
     height: 53,
@@ -349,28 +366,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 24,
-    // Espaço para o reenviar
   },
-  buttonContentRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  primaryButtonText: {
-    fontSize: 12,
-    fontWeight: "300",
-  },
-  resendContainer: {
-    alignItems: "center",
-    marginBottom: 50,
-  },
-  resendText: {
-    fontSize: 12,
-    fontWeight: "400",
-    color: "#E8F1F2",
-  },
-  timerText: {
-    fontWeight: "300",
-    color: "rgba(232, 241, 242, 0.7)",
-  },
+  buttonContentRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  primaryButtonText: { fontSize: 12, fontWeight: "300" },
+  resendContainer: { alignItems: "center", marginBottom: 50 },
+  resendText: { fontSize: 12, fontWeight: "400", color: "#E8F1F2" },
+  timerText: { fontWeight: "300", color: "rgba(232, 241, 242, 0.7)" },
 });

@@ -1,162 +1,198 @@
+import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   ImageBackground,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
   SafeAreaView,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import FishIcon from "../src/components/icons/FishIcon";
 
-// Criando o componente animado para o botão
 const AnimatedTouchableOpacity =
   Animated.createAnimatedComponent(TouchableOpacity);
 
 export default function SenhaRecuperadaScreen() {
+  const router = useRouter();
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
-  // --- VALIDAÇÃO E ANIMAÇÃO ---
-  // O botão ativa se as duas senhas tiverem pelo menos 6 caracteres e forem IGUAIS
   const isButtonActive = oldPassword.length >= 6 && oldPassword === newPassword;
   const buttonAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(buttonAnim, {
       toValue: isButtonActive ? 1 : 0,
-      duration: 300, // Transição suave de 300ms
+      duration: 300,
       useNativeDriver: false,
     }).start();
   }, [isButtonActive]);
 
-  // Transição do Fundo: Branco/Gelo -> Amarelo Destaque (Conforme você pediu)
   const buttonBackgroundColor = buttonAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ["#DBE4E5", "#EEE82C"],
   });
 
-  // Transição do Texto e Ícone: Como o fundo é sempre claro (branco ou amarelo), o texto fica sempre escuro
   const buttonContentColor = buttonAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ["#001A23", "#001A23"],
   });
 
   return (
-    <ImageBackground
-      source={require("../src/assets/imagem_fundo.png")}
-      style={styles.backgroundImage}
-      resizeMode="cover"
-      imageStyle={{
-        top: -10,
-        left: -2,
-        transform: [{ scale: 1.03 }],
-      }}
-    >
-      <LinearGradient
-        colors={["transparent", "rgba(0, 26, 35, 0.7)", "#001A23", "#001A23"]}
-        locations={[0, 0.4, 0.8, 1]}
-        style={styles.overlay}
+    <View style={{ flex: 1, backgroundColor: "#001A23" }}>
+      {/* CAMADA 1 */}
+      <ImageBackground
+        source={require("../src/assets/imagem_tree_fundo.jpeg")}
+        style={StyleSheet.absoluteFillObject}
+        resizeMode="cover"
+        imageStyle={{ transform: [{ scale: 1.0 }, { translateY: -230 }] }}
       />
 
-      <SafeAreaView style={styles.container}>
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor="transparent"
-          translucent
+      {/* CAMADA 2 */}
+      <MaskedView
+        style={StyleSheet.absoluteFillObject}
+        maskElement={
+          <LinearGradient
+            colors={["transparent", "#FFFFFF"]}
+            locations={[0, 1.0]}
+            style={StyleSheet.absoluteFillObject}
+          />
+        }
+      >
+        <ImageBackground
+          source={require("../src/assets/imagem_tree_fundo.jpeg")}
+          style={StyleSheet.absoluteFillObject}
+          resizeMode="cover"
+          blurRadius={Platform.OS === "web" ? 5 : 15}
+          imageStyle={{ transform: [{ scale: 1.0 }, { translateY: -230 }] }}
         />
+      </MaskedView>
 
-        <View style={styles.content}>
-          <View style={styles.headerContainer}>
-            <View style={styles.logoContainer}>
-              <FishIcon width={50} height={50} />
-            </View>
+      {/* CAMADA 3 */}
+      <LinearGradient
+        colors={["transparent", "rgba(0, 26, 35, 0.7)", "#001A23", "#001A23"]}
+        locations={[0.1, 0.4, 0.65, 1]}
+        style={StyleSheet.absoluteFillObject}
+      />
 
-            {/* --- TEXTOS ATUALIZADOS PARA SUCESSO --- */}
-            <Text style={styles.title}>Recuperada com sucesso!</Text>
-            <Text style={styles.subtitle}>
-              Isso aí! Sua senha foi recuperada com sucesso!
-            </Text>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Senha</Text>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.textInput}
-                placeholder="Sua nova senha"
-                placeholderTextColor="rgba(255, 255, 255, 0.7)"
-                secureTextEntry={!isPasswordVisible}
-                value={oldPassword}
-                onChangeText={setOldPassword}
-              />
-              <TouchableOpacity
-                style={styles.eyeButton}
-                onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-              >
-                <EyeIcon />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Repetir senha</Text>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={[styles.textInput, { flex: 1 }]}
-                placeholder="Repita sua nova senha"
-                placeholderTextColor="rgba(255, 255, 255, 0.7)"
-                secureTextEntry={!isPasswordVisible}
-                value={newPassword}
-                onChangeText={setNewPassword}
-              />
-              <TouchableOpacity
-                style={styles.eyeButton}
-                onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-              >
-                <EyeIcon />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Botão com Animação Aplicada e Texto de Login */}
-          <AnimatedTouchableOpacity
-            style={[
-              styles.primaryButton,
-              { backgroundColor: buttonBackgroundColor },
-              isButtonActive && styles.primaryButtonActive, // Aplica a sombra quando ativo
-            ]}
-            disabled={!isButtonActive}
+      {/* CAMADA 4: Proteção contra o teclado */}
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 20 : -90}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1 }}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+            showsVerticalScrollIndicator={false}
           >
-            <View style={styles.buttonContentRow}>
-              <Animated.Text
-                style={[
-                  styles.primaryButtonText,
-                  { color: buttonContentColor },
-                ]}
-              >
-                Realizar Login
-              </Animated.Text>
-              {/* O ArrowIcon é sempre escuro nessa tela porque o botão é claro */}
-              <ArrowIcon color="#001A23" />
-            </View>
-          </AnimatedTouchableOpacity>
-        </View>
-      </SafeAreaView>
-    </ImageBackground>
+            <SafeAreaView style={{ flex: 1 }}>
+              <StatusBar
+                barStyle="light-content"
+                backgroundColor="transparent"
+                translucent
+              />
+
+              <View style={styles.content}>
+                <View style={styles.headerContainer}>
+                  <View style={styles.logoContainer}>
+                    <FishIcon width={50} height={50} />
+                  </View>
+
+                  <Text style={styles.title}>Recuperada com sucesso!</Text>
+                  <Text style={styles.subtitle}>
+                    Isso aí! Sua senha foi recuperada com sucesso!
+                  </Text>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Senha</Text>
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Sua nova senha"
+                      placeholderTextColor="rgba(255, 255, 255, 0.7)"
+                      secureTextEntry={!isPasswordVisible}
+                      value={oldPassword}
+                      onChangeText={setOldPassword}
+                    />
+                    <TouchableOpacity
+                      style={styles.eyeButton}
+                      onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+                    >
+                      <EyeIcon />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Repetir senha</Text>
+                  <View style={styles.inputContainer}>
+                    <TextInput
+                      style={[styles.textInput, { flex: 1 }]}
+                      placeholder="Repita sua nova senha"
+                      placeholderTextColor="rgba(255, 255, 255, 0.7)"
+                      secureTextEntry={!isPasswordVisible}
+                      value={newPassword}
+                      onChangeText={setNewPassword}
+                    />
+                    <TouchableOpacity
+                      style={styles.eyeButton}
+                      onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+                    >
+                      <EyeIcon />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <AnimatedTouchableOpacity
+                  style={[
+                    styles.primaryButton,
+                    { backgroundColor: buttonBackgroundColor },
+                    isButtonActive && styles.primaryButtonActive,
+                  ]}
+                  disabled={!isButtonActive}
+                  onPress={() => router.push("/login-email")}
+                >
+                  <View style={styles.buttonContentRow}>
+                    <Animated.Text
+                      style={[
+                        styles.primaryButtonText,
+                        { color: buttonContentColor },
+                      ]}
+                    >
+                      Realizar Login
+                    </Animated.Text>
+                    <ArrowIcon color="#001A23" />
+                  </View>
+                </AnimatedTouchableOpacity>
+              </View>
+            </SafeAreaView>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 // ==========================================
 // ÍCONES SVG INLINE
 // ==========================================
-
 const ArrowIcon = ({ color }: { color: string }) => (
   <Svg width="19" height="19" viewBox="0 0 19 19" fill="none">
     <Path
@@ -176,21 +212,14 @@ const EyeIcon = () => (
   </Svg>
 );
 
-// ==========================================
-// ESTILOS
-// ==========================================
-
 const styles = StyleSheet.create({
-  backgroundImage: {
-    flex: 1,
-    width: "100%",
-    height: "100%",
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
+  backgroundImage: { flex: 1, width: "100%", height: "100%" },
+  overlay: { ...StyleSheet.absoluteFillObject },
   container: {
     flex: 1,
+    width: "100%",
+    maxWidth: 480,
+    alignSelf: "center",
   },
   content: {
     flex: 1,
@@ -198,13 +227,8 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     paddingBottom: 100,
   },
-  headerContainer: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  logoContainer: {
-    marginBottom: 10,
-  },
+  headerContainer: { alignItems: "center", marginBottom: 20 },
+  logoContainer: { marginBottom: 10 },
   title: {
     fontSize: 24,
     fontWeight: "500",
@@ -219,9 +243,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 18,
   },
-  inputGroup: {
-    marginBottom: 10,
-  },
+  inputGroup: { marginBottom: 10 },
   inputLabel: {
     fontSize: 12,
     fontWeight: "300",
@@ -245,10 +267,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "300",
   },
-  eyeButton: {
-    padding: 8,
-    marginRight: -6,
-  },
+  eyeButton: { padding: 8, marginRight: -6 },
   primaryButton: {
     flexDirection: "row",
     height: 53,
@@ -258,19 +277,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   primaryButtonActive: {
-    elevation: 3, // Sombra nativa do Android
-    shadowColor: "#00282D", // Sombra nativa do iOS
+    elevation: 3,
+    shadowColor: "#00282D",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 1,
   },
-  buttonContentRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  primaryButtonText: {
-    fontSize: 12,
-    fontWeight: "300",
-  },
+  buttonContentRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  primaryButtonText: { fontSize: 12, fontWeight: "300" },
 });

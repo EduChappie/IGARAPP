@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router"; // <-- Importação do roteador adicionada
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -12,45 +13,36 @@ import {
 import Svg, { ClipPath, Defs, G, Path, Rect } from "react-native-svg";
 import FishIcon from "../src/components/icons/FishIcon";
 
-// Criando uma versão animada do TouchableOpacity para a transição de cor
 const AnimatedTouchableOpacity =
   Animated.createAnimatedComponent(TouchableOpacity);
 
 export default function LoginScreen() {
+  const router = useRouter(); // <-- Ativando o roteador
   const [phoneNumber, setPhoneNumber] = useState("");
 
-  // O botão só fica ativo se tivermos 11 números (DDD + 9 dígitos)
   const isButtonActive = phoneNumber.replace(/\D/g, "").length >= 11;
-
-  // Valor da nossa animação (0 = Inativo, 1 = Ativo)
   const buttonAnim = useRef(new Animated.Value(0)).current;
 
-  // Efeito que roda a transição suave de 300ms quando o status do botão muda
   useEffect(() => {
     Animated.timing(buttonAnim, {
       toValue: isButtonActive ? 1 : 0,
-      duration: 300, // Tempo da transição em milissegundos (suave)
-      useNativeDriver: false, // Precisa ser false para animar cores
+      duration: 300,
+      useNativeDriver: false,
     }).start();
   }, [isButtonActive]);
 
-  // Interpolando as cores baseado na animação
   const backgroundColor = buttonAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ["#203422", "#EEE82C"], // Do verde musgo para o Amarelo
+    outputRange: ["#203422", "#EEE82C"],
   });
 
   const textColor = buttonAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ["#3D523B", "#001A23"], // Do texto apagado para o texto escuro
+    outputRange: ["#3D523B", "#001A23"],
   });
 
-  // Função que formata o telefone enquanto o usuário digita
   const handlePhoneChange = (text: string) => {
-    // Remove tudo que não for número
     const cleaned = text.replace(/\D/g, "");
-
-    // Aplica a máscara (XX) XXXXX-XXXX limitando a 11 números
     let formatted = cleaned;
     if (cleaned.length > 2) {
       formatted = `(${cleaned.substring(0, 2)}) ${cleaned.substring(2)}`;
@@ -58,7 +50,6 @@ export default function LoginScreen() {
     if (cleaned.length > 7) {
       formatted = `(${cleaned.substring(0, 2)}) ${cleaned.substring(2, 7)}-${cleaned.substring(7, 11)}`;
     }
-
     setPhoneNumber(formatted);
   };
 
@@ -67,19 +58,16 @@ export default function LoginScreen() {
       <StatusBar barStyle="light-content" backgroundColor="#001A23" />
 
       <View style={styles.content}>
-        {/* --- LOGO --- */}
         <View style={{ marginBottom: 24, marginTop: 20 }}>
           <FishIcon width={50} height={50} />
         </View>
 
-        {/* --- TEXTOS --- */}
         <Text style={styles.title}>Bem vindo de volta</Text>
         <Text style={styles.subtitle}>
           Coloque o seu número de telefone associado a sua conta{" "}
           <Text style={{ fontWeight: "500", color: "#E8F1F2" }}>IgarApp</Text>
         </Text>
 
-        {/* --- INPUT DE TELEFONE --- */}
         <View style={styles.inputRow}>
           <View style={styles.countryCodeContainer}>
             <BrazilFlag />
@@ -93,13 +81,12 @@ export default function LoginScreen() {
               placeholderTextColor="rgba(255, 255, 255, 0.7)"
               keyboardType="phone-pad"
               value={phoneNumber}
-              onChangeText={handlePhoneChange} // Usando a nova função de máscara
-              maxLength={15} // Limita o tamanho máximo com a máscara
+              onChangeText={handlePhoneChange}
+              maxLength={15}
             />
           </View>
         </View>
 
-        {/* --- BOTÃO CONTINUAR (Agora Animado!) --- */}
         <AnimatedTouchableOpacity
           style={[styles.continueButton, { backgroundColor }]}
           disabled={!isButtonActive}
@@ -110,20 +97,21 @@ export default function LoginScreen() {
             Continuar
           </Animated.Text>
           <View style={styles.arrowIconContainer}>
-            {/* A cor da seta fixada em #001A23 como você pediu */}
             <ArrowIcon color="#001A23" />
           </View>
         </AnimatedTouchableOpacity>
 
-        {/* --- DIVISOR "OU" --- */}
         <View style={styles.dividerContainer}>
           <View style={styles.dividerLine} />
           <Text style={styles.dividerText}>OU</Text>
           <View style={styles.dividerLine} />
         </View>
 
-        {/* --- BOTÕES SOCIAIS --- */}
-        <TouchableOpacity style={styles.socialButton}>
+        {/* --- NAVEGAÇÃO ADICIONADA AQUI --- */}
+        <TouchableOpacity
+          style={styles.socialButton}
+          onPress={() => router.push("/login-email")} // Leva para a tela de email
+        >
           <Text style={styles.socialButtonText}>Continuar com o E-mail</Text>
           <EmailIcon />
         </TouchableOpacity>
@@ -133,7 +121,11 @@ export default function LoginScreen() {
 }
 
 // ==========================================
-// ÍCONES SVG INLINE (Convertidos do Figma)
+// ÍCONES SVG INLINE
+// ==========================================
+
+// ==========================================
+// ÍCONES SVG INLINE
 // ==========================================
 
 const BrazilFlag = () => (
@@ -187,7 +179,7 @@ const EmailIcon = () => (
 );
 
 // ==========================================
-// ESTILOS IGUAIS AO FIGMA (Seu CSS intacto)
+// ESTILOS
 // ==========================================
 
 const styles = StyleSheet.create({
@@ -198,7 +190,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 60, // Ajuste fluido para o seu 'top: 170px'
+    paddingTop: 60,
   },
   title: {
     fontSize: 24,
@@ -209,14 +201,14 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 12,
     fontWeight: "300",
-    color: "rgba(255, 255, 255, 0.7)", // #FFFFFFB2
+    color: "rgba(255, 255, 255, 0.7)",
     marginBottom: 32,
     lineHeight: 16,
   },
   inputRow: {
     flexDirection: "row",
     marginBottom: 24,
-    gap: 10, // Distância exata de 10px que estava no seu bloco
+    gap: 10,
   },
   countryCodeContainer: {
     flexDirection: "row",
@@ -259,8 +251,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
     gap: 10,
-    // Nota: O React Native não tem "inner shadow" nativo perfeito,
-    // então usamos elevation padrão para não quebrar o visual
     elevation: 3,
   },
   continueButtonText: {
@@ -293,10 +283,10 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     borderWidth: 0.7,
     borderColor: "rgba(255, 255, 255, 0.15)",
-    justifyContent: "center", // <-- Mudamos de 'space-between' para 'center'
+    justifyContent: "center",
     alignItems: "center",
     marginBottom: 25,
-    gap: 10, // <-- Adicionamos esse espaço de 10px entre o texto e o ícone
+    gap: 10,
   },
   socialButtonText: {
     color: "#FFFFFF",
