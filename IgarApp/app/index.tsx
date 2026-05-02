@@ -23,7 +23,7 @@ export default function LoginScreen() {
           resizeMode="cover"
           imageStyle={styles.backgroundImageStyle}
         >
-          {/* Overlay de degradê ajustado para cobrir melhor os textos que subiram */}
+          {/* Overlay de degradê ajustado */}
           <LinearGradient
             colors={['transparent', 'rgba(1, 42, 54, 0.9)', '#012A36']}
             locations={[0, 0.30, 0.55]} 
@@ -50,9 +50,9 @@ export default function LoginScreen() {
 
           {/* Card inferior */}
           <View style={styles.bottomActionContainer}>
-            {/* Botão voluntário */}
+            {/* Botão voluntário (agora apontando pro cadastro de pessoa física) */}
             <TouchableOpacity
-              onPress={() => router.push('/login')}
+              onPress={() => router.push('/cadastropf')}
               style={styles.primaryActionButton}
             >
               <View style={styles.buttonTextContainer}>
@@ -82,9 +82,15 @@ export default function LoginScreen() {
               />
             </TouchableOpacity>
 
-            {/* Links */}
+            {/* Links Atualizados */}
             <Text style={styles.forgotPasswordText}>
-              Esqueceu sua senha? <Text style={styles.underline}>Redefinir Senha</Text>
+              Já possui conta?{' '}
+              <Text 
+                style={styles.underline} 
+                onPress={() => router.push('/login')}
+              >
+                Efetuar Login.
+              </Text>
             </Text>
 
             <Text style={styles.termsAndPrivacyText}>

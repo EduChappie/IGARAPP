@@ -24,8 +24,7 @@ export const styles = StyleSheet.create({
   },
   topContentContainer: {
     paddingHorizontal: 18,
-    // Subimos a informação (antes era 0.45, agora 0.32) para caber sem scroll
-    paddingTop: height * 0.32, 
+    paddingTop: height * 0.26, 
     alignItems: 'flex-start',
   },
   applicationLogoImage: {
@@ -50,21 +49,20 @@ export const styles = StyleSheet.create({
     color: '#A0B3B8',
     fontSize: 14,
     lineHeight: 20,
-    marginBottom: 32,
+    marginBottom: 16,
     fontWeight: '400',
   },
   bottomActionContainer: {
     paddingHorizontal: 14,
     flex: 1,
     justifyContent: 'flex-end',
-    paddingBottom: 30,
+    paddingBottom: 60, 
   },
-  // Botões maiores
   primaryActionButton: {
     backgroundColor: 'rgba(1, 42, 54, 0.8)', 
-    borderRadius: 24, // Bordas um pouco mais arredondadas
-    paddingVertical: 24, // Botão mais alto
-    paddingHorizontal: 24, // Espaçamento interno maior
+    borderRadius: 24,
+    paddingVertical: 24,
+    paddingHorizontal: 24,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -89,16 +87,15 @@ export const styles = StyleSheet.create({
   },
   buttonSmallLabelText: {
     color: '#A6FF00', 
-    fontSize: 13, // Levemente maior
+    fontSize: 13, 
     fontWeight: '600',
     marginBottom: 4,
   },
   buttonMainText: {
     color: '#FFFFFF',
-    fontSize: 24, // Fonte aumentada
+    fontSize: 24, 
     fontWeight: '800',
   },
-  // Ícones maiores
   buttonIconImage: {
     width: 65, 
     height: 65,
@@ -126,11 +123,11 @@ export const styles = StyleSheet.create({
   }
 });
 
-// Estilos extras (mantidos iguais à última versão)
+// Estilos extras para Login e as telas de Cadastro
 export const extra = StyleSheet.create({
   topContentContainer: {
     paddingHorizontal: 24,
-    paddingTop: height * 0.35, 
+    paddingTop: height * 0.26, // Subimos as informações para caber tudo sem scroll
     alignItems: 'center', 
   },
   topContentContainerFocus: {
@@ -148,13 +145,14 @@ export const extra = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
-    marginBottom: 20,
+    marginBottom: 30,
   },
   bottomActionContainer: {
     paddingHorizontal: 24,
     flex: 1,
     justifyContent: 'flex-start',
     width: '100%',
+    paddingBottom: 20, // Ajustado para dar um respiro no fim sem sumir da tela
   },
   bottomActionContainerFocus: {
   },
@@ -162,6 +160,7 @@ export const extra = StyleSheet.create({
     color: '#FFFFFF', 
     fontSize: 12,
     marginBottom: 8,
+    marginTop: 12,
     opacity: 0.8,
   },
   inputFiled: { 

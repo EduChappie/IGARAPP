@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { Image, ImageBackground, ScrollView, TextInput, TouchableOpacity, View } from "react-native";
-import { Text } from "react-native";
+import { Image, ImageBackground, TextInput, TouchableOpacity, View, Text } from "react-native";
 import { styles, extra } from "@/styles/_style";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -33,199 +32,109 @@ export default function cadastro_one() {
     }
 
     return (
-        <ScrollView
-            contentContainerStyle={{ flexGrow: 1 }}
-            style={{
-              backgroundColor: '#012A36',
-            }}
-            keyboardShouldPersistTaps="handled"
-        >
-        <View style={styles.mainContainer}>
-        
-              {/* Imagem de fundo */}
-              <ImageBackground
-                source={require('@/assets/images/floresta.png')}
-                style={styles.backgroundImage}
-                resizeMode="cover"
-                imageStyle={ styles.backgroundImageStyle }
-              >
-        
-                {/* Overlay de escurecimento + degradê */}
-                <LinearGradient
-                  colors={[
-                    '#001A23',
-                    '#001A23',
-                    'transparent'
-                  ]}
-                  locations={[1, 0.5, 0]}
-                  style={styles.backgroundGradientOverlay}
-                  
-                />
-        
-                {/* Conteúdo superior */}
-                <View style={[
-                    extra.topContentContainer,
-                    (isFocused1 || isFocused2 || isFocused3 || isFocused4) && extra.topContentContainerFocus
-                    ]}>
-                  <Image
-                    source={require('@/assets/images/logo.png')}
-                    style={styles.applicationLogoImage}
-                  />
-        
-                  <Text style={extra.mainTitleText}>
-                    Vamos começar agora!
-                  </Text>
-        
-                  <Text style={extra.subtitleDescriptionText}>
-                    Um app para aqueles que querem ajudar a amazônia
-                    {'\n'}
-                    a se tornar um lugar mais limpo e digno
-                  </Text>
-                </View>
-        
-                {/* Card inferior */}
-                <View style={[
-                    extra.bottomActionContainer,
-                    (isFocused1 || isFocused2 || isFocused3 || isFocused4) && extra.bottomActionContainerFocus
-                    ]}>
+        <View style={{ flex: 1, backgroundColor: '#012A36' }}>
+            <View style={styles.mainContainer}>
+                <ImageBackground
+                    source={require('@/assets/images/floresta.png')}
+                    style={styles.backgroundImage}
+                    resizeMode="cover"
+                    imageStyle={styles.backgroundImageStyle}
+                >
+                    {/* Degradê começando mais embaixo (0.40 a 0.65) */}
+                    <LinearGradient
+                        colors={['transparent', 'rgba(1, 42, 54, 0.95)', '#012A36']}
+                        locations={[0, 0.40, 0.65]}
+                        style={styles.backgroundGradientOverlay}
+                    />
 
-                  <View>
-
-                    {/* Step indicator */}
-                    <View style={cadastroExtra.stepContainer}>
-                        <View style={cadastroExtra.stepDot} />
-                        <View style={cadastroExtra.stepLineActive} />
-                        <View style={cadastroExtra.stepDotInactive} />
-                        <View style={cadastroExtra.stepLine} />
-                        <View style={cadastroExtra.stepDotInactive} />
+                    {/* Empurramos o conteúdo mais pra baixo com paddingTop: 110 */}
+                    <View style={[extra.topContentContainer, { paddingTop: 170 }]}>
+                        <Image source={require('@/assets/images/logo.png')} style={styles.applicationLogoImage} />
+                        <Text style={extra.mainTitleText}>Vamos começar agora!</Text>
+                        <Text style={extra.subtitleDescriptionText}>
+                            Um app para aqueles que querem ajudar a amazônia{'\n'}a se tornar um lugar mais limpo e digno
+                        </Text>
                     </View>
 
-                    {/* Linha dupla: Email + Senha */}
-                    <View style={cadastroExtra.rowInputContainer}>
-
-                        {/* Email */}
-                        <View style={cadastroExtra.halfInputWrapper}>
-                            <Text style={cadastroExtra.labelSmall}>
-                                Seu melhor e-mail
-                            </Text>
-                            <TextInput
-                                placeholder="Digite o seu e-mail"
-                                placeholderTextColor="rgba(255,255,255,0.35)"
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                                style={[
-                                    cadastroExtra.inputField,
-                                    isFocused1 && cadastroExtra.inputFieldFocused
-                                ]}
-                                onFocus={() => setIsFocused1(true)}
-                                onBlur={() => setIsFocused1(false)}
-                            />
-                        </View>
-
-                        {/* Senha */}
-                        <View style={cadastroExtra.halfInputWrapper}>
-                            <Text style={cadastroExtra.labelSmall}>
-                                Sua senha
-                            </Text>
-                            <View style={[
-                                cadastroExtra.passwordWrapper,
-                                isFocused2 && cadastroExtra.passwordWrapperFocused
-                            ]}>
-                                <TextInput
-                                    placeholder="Crie uma senha forte"
-                                    placeholderTextColor="rgba(255,255,255,0.35)"
-                                    autoCapitalize="none"
-                                    autoCorrect={false}
-                                    textContentType="none"
-                                    autoComplete="off"
-                                    style={cadastroExtra.passwordInput}
-                                    onFocus={() => setIsFocused2(true)}
-                                    onBlur={() => setIsFocused2(false)}
-                                    secureTextEntry={isPasswordHidden}
-                                />
-                                <TouchableOpacity style={cadastroExtra.eyeIcon} onPress={passwordVisibility}>
-                                    <Ionicons
-                                        name={isPasswordHidden ? 'eye-off' : 'eye'}
-                                        size={20}
-                                        color="#A6FF00"
-                                    />
-                                </TouchableOpacity>
+                    <View style={extra.bottomActionContainer}>
+                        <View>
+                            <View style={cadastroExtra.stepContainer}>
+                                <View style={cadastroExtra.stepDot} />
+                                <View style={cadastroExtra.stepLine} />
+                                <View style={cadastroExtra.stepDotInactive} />
+                                <View style={cadastroExtra.stepLine} />
+                                <View style={cadastroExtra.stepDotInactive} />
+                                <View style={cadastroExtra.stepLine} />
+                                <View style={cadastroExtra.stepDotInactive} />
                             </View>
+
+                            <View style={cadastroExtra.rowInputContainer}>
+                                <View style={cadastroExtra.halfInputWrapper}>
+                                    <Text style={cadastroExtra.labelSmall}>Seu melhor e-mail</Text>
+                                    <TextInput
+                                        placeholder="Digite o seu e-mail"
+                                        placeholderTextColor="rgba(255,255,255,0.35)"
+                                        keyboardType="email-address"
+                                        autoCapitalize="none"
+                                        style={[cadastroExtra.inputField, isFocused1 && cadastroExtra.inputFieldFocused]}
+                                        onFocus={() => setIsFocused1(true)}
+                                        onBlur={() => setIsFocused1(false)}
+                                    />
+                                </View>
+
+                                <View style={cadastroExtra.halfInputWrapper}>
+                                    <Text style={cadastroExtra.labelSmall}>Sua senha</Text>
+                                    <View style={[cadastroExtra.passwordWrapper, isFocused2 && cadastroExtra.passwordWrapperFocused]}>
+                                        <TextInput
+                                            placeholder="Crie uma senha forte"
+                                            placeholderTextColor="rgba(255,255,255,0.35)"
+                                            autoCapitalize="none"
+                                            secureTextEntry={isPasswordHidden}
+                                            style={cadastroExtra.passwordInput}
+                                            onFocus={() => setIsFocused2(true)}
+                                            onBlur={() => setIsFocused2(false)}
+                                        />
+                                        <TouchableOpacity style={cadastroExtra.eyeIcon} onPress={passwordVisibility}>
+                                            <Ionicons name={isPasswordHidden ? 'eye-off-outline' : 'eye-outline'} size={20} color="#A6FF00" />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            </View>
+
+                            <Text style={cadastroExtra.labelSmall}>Razão Social/Nome Fantasia</Text>
+                            <TextInput
+                                placeholder="Digite o nome da sua empresa como consta no documento"
+                                placeholderTextColor="rgba(255,255,255,0.35)"
+                                style={[cadastroExtra.inputFieldFullWidth, isFocused3 && cadastroExtra.inputFieldFullWidthFocused]}
+                                onFocus={() => setIsFocused3(true)}
+                                onBlur={() => setIsFocused3(false)}
+                            />
+
+                            <Text style={cadastroExtra.labelSmall}>CNPJ</Text>
+                            <TextInput
+                                placeholder="XX.XXX.XXX/XXXX-XX"
+                                placeholderTextColor="rgba(255,255,255,0.35)"
+                                keyboardType="numeric"
+                                value={cnpj}
+                                onChangeText={handleCnpjChange}
+                                style={[cadastroExtra.inputFieldFullWidth, isFocused4 && cadastroExtra.inputFieldFullWidthFocused]}
+                                onFocus={() => setIsFocused4(true)}
+                                onBlur={() => setIsFocused4(false)}
+                            />
+
+                            <TouchableOpacity onPress={() => router.push('/cadastro_two')} style={cadastroExtra.buttonProximaEtapa}>
+                                <Text style={cadastroExtra.buttonProximaEtapaText}>Próxima etapa</Text>
+                                <Ionicons name={'arrow-forward'} style={{ transform: [{ rotate: '-45deg' }] }} size={18} color={'black'} />
+                            </TouchableOpacity>
                         </View>
-
+                        
+                        <Text style={extra.termsAndPrivacyText}>
+                            Ao criar sua conta no <Text style={styles.destaque}>IgarApp</Text>, você estará concordando{'\n'}
+                            com os <Text style={styles.destaque}><Text style={styles.underline}>Termos de Uso</Text></Text> e <Text style={styles.destaque}><Text style={styles.underline}>Política de Privacidade</Text></Text>
+                        </Text>
                     </View>
-
-                    {/* Razão Social / Nome Fantasia */}
-                    <Text style={cadastroExtra.labelSmall}>
-                        Razão Social/Nome Fantasia
-                    </Text>
-                    <TextInput
-                        placeholder="Digite o nome da sua empresa como consta no documento"
-                        placeholderTextColor="rgba(255,255,255,0.35)"
-                        style={[
-                            cadastroExtra.inputFieldFullWidth,
-                            isFocused3 && cadastroExtra.inputFieldFullWidthFocused
-                        ]}
-                        onFocus={() => setIsFocused3(true)}
-                        onBlur={() => setIsFocused3(false)}
-                    />
-
-                    {/* CNPJ */}
-                    <Text style={cadastroExtra.labelSmall}>
-                        CNPJ
-                    </Text>
-                    <TextInput
-                        placeholder="XX.XXX.XXX/XXXX-XX"
-                        placeholderTextColor="rgba(255,255,255,0.35)"
-                        keyboardType="numeric"
-                        value={cnpj}
-                        onChangeText={handleCnpjChange}
-                        style={[
-                            cadastroExtra.inputFieldFullWidth,
-                            isFocused4 && cadastroExtra.inputFieldFullWidthFocused
-                        ]}
-                        onFocus={() => setIsFocused4(true)}
-                        onBlur={() => setIsFocused4(false)}
-                    />
-
-                    {/* Botão Próxima etapa */}
-                    <TouchableOpacity onPress={() => {
-                        router.push('/cadastro_two')
-                    }} style={cadastroExtra.buttonProximaEtapa}>
-                        <Text style={cadastroExtra.buttonProximaEtapaText}>
-                            Próxima etapa
-                        </Text>
-                        <Ionicons
-                            name={'arrow-forward-outline'}
-                            size={18}
-                            color={'black'}
-                        />
-                    </TouchableOpacity>
-
-                  </View>
-                  
-                  {/* Links */}
-                  <Text style={extra.forgotPasswordText}>
-                    Esqueceu sua senha? <Text style={ styles.underline } >Redefinir Senha</Text>
-                  </Text>
-        
-                  <Text style={extra.termsAndPrivacyText}>
-                    Ao criar sua conta no <Text style={styles.destaque}>IgarApp</Text>, você estará concordando
-                    {'\n'}
-                    com os <Text style={styles.destaque}>
-                        <Text style={ styles.underline } >
-                          Termos de Uso
-                        </Text>
-                      </Text> e <Text style={styles.destaque}>
-                        <Text style={ styles.underline } >Política de Privacidade
-                        </Text>
-                      </Text>
-                  </Text>
-        
-                </View>
-        
-              </ImageBackground>
+                </ImageBackground>
             </View>
-        </ScrollView>
+        </View>
     );
 }
