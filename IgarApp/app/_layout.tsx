@@ -1,24 +1,20 @@
-import 'react-native-reanimated';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import React from 'react';
 import { Stack } from 'expo-router';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ headerShown: false }}/>
-      <Stack.Screen name="login" options={{ headerShown: false }}/>
+    <Stack 
+      // Essa linha mágica arranca a barra branca de TODAS as telas do seu app
+      screenOptions={{ headerShown: false }}
+    >
+      <Stack.Screen name="index" />
+      <Stack.Screen name="login" />
+      <Stack.Screen name="cadastropf" />
       
-      {/* Telas ONG (Pessoa Jurídica) */}
-      <Stack.Screen name="cadastro_one" options={{ headerShown: false }}/>
-      <Stack.Screen name="cadastro_two" options={{ headerShown: false }}/>
-      <Stack.Screen name="cadastro_three" options={{ headerShown: false }}/>
-      <Stack.Screen name="cadastro_success" options={{ headerShown: false }}/>
-
-      {/* Telas Voluntário (Pessoa Física) - Adicionadas aqui! */}
-      <Stack.Screen name="cadastropf" options={{ headerShown: false }}/>
-      <Stack.Screen name="cadastropf_sucess" options={{ headerShown: false }}/>
+      {/* Coloquei cadastro_ong aqui baseado no print, se o nome do seu arquivo for cadastro_pj, é só alterar aqui! */}
+      <Stack.Screen name="cadastro_ong" /> 
+      
+      <Stack.Screen name="detalhes_ativa" />
     </Stack>
   );
 }

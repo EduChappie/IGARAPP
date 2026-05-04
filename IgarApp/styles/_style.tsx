@@ -13,6 +13,7 @@ export const styles = StyleSheet.create({
     height: '100%',
   },
   backgroundImageStyle: {
+    //marginTop: 20,
     opacity: 0.8, 
   },
   backgroundGradientOverlay: {
@@ -24,7 +25,7 @@ export const styles = StyleSheet.create({
   },
   topContentContainer: {
     paddingHorizontal: 18,
-    paddingTop: height * 0.26, 
+    paddingTop: height * 0.29, 
     alignItems: 'flex-start',
   },
   applicationLogoImage: {
@@ -56,7 +57,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 14,
     flex: 1,
     justifyContent: 'flex-end',
-    paddingBottom: 60, 
+    paddingBottom: 80, 
   },
   primaryActionButton: {
     backgroundColor: 'rgba(1, 42, 54, 0.8)', 
