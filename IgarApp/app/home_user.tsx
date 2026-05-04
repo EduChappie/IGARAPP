@@ -1,5 +1,6 @@
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Dimensions,
@@ -120,6 +121,8 @@ const FEED_DATA = [
 ];
 
 export default function HomeUserScreen() {
+  const router = useRouter();
+
   return (
     <View style={styles.mainContainer}>
       <StatusBar barStyle="light-content" backgroundColor="#001A23" />
@@ -173,12 +176,20 @@ export default function HomeUserScreen() {
           <TouchableOpacity style={styles.tabIconActive} activeOpacity={0.7}>
             <HomeIcon />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.tabIcon} activeOpacity={0.7}>
+
+          {/* LINK PARA O PERFIL QUE SEU COLEGA CRIOU */}
+          <TouchableOpacity
+            style={styles.tabIcon}
+            activeOpacity={0.7}
+            onPress={() => router.push("../perfil_pf")}
+          >
             <UserIcon />
           </TouchableOpacity>
+
           <TouchableOpacity style={styles.tabIcon} activeOpacity={0.7}>
             <FishNavIcon />
           </TouchableOpacity>
+
           <TouchableOpacity style={styles.tabIcon} activeOpacity={0.7}>
             <RefreshIcon />
           </TouchableOpacity>
@@ -192,6 +203,7 @@ export default function HomeUserScreen() {
 // COMPONENTE DO CARD COM CARROSSEL ANIMADO
 // ==========================================
 const ProjectCard = ({ data }: { data: any }) => {
+  const router = useRouter();
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const activeIndexRef = useRef(0);
@@ -230,7 +242,7 @@ const ProjectCard = ({ data }: { data: any }) => {
       {/* CABEÇALHO DO CARD */}
       <View style={styles.cardHeader}>
         <View style={styles.orgInfo}>
-          {/* AVATAR DO Igarapé (USANDO A IMAGEM COMO PEDIDO) */}
+          {/* AVATAR DO Igarapé */}
           <View style={styles.avatarContainer}>
             <Image
               source={require("../src/assets/globo.png")}
@@ -244,8 +256,12 @@ const ProjectCard = ({ data }: { data: any }) => {
         </View>
       </View>
 
-      {/* CORPO DO CARD VERDE */}
-      <View style={styles.cardBody}>
+      {/* CORPO DO CARD VERDE (AGORA CLICÁVEL COM ROTA) */}
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={() => router.push("/detalhes-evento")}
+        style={styles.cardBody}
+      >
         {/* CARROSSEL DE IMAGENS */}
         <View style={styles.carouselContainer}>
           <FlatList
@@ -296,13 +312,13 @@ const ProjectCard = ({ data }: { data: any }) => {
             <Text style={styles.pillText}>{data.time}</Text>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     </View>
   );
 };
 
 // ==========================================
-// ÍCONES SVG INLINE
+// ÍCONES SVG INLINE RESTAURADOS
 // ==========================================
 
 const LogoTelaInicialSVG = () => (
