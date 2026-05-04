@@ -18,7 +18,19 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import Svg, { Path } from "react-native-svg";
+// IMPORTAÇÕES DO SVG ATUALIZADAS AQUI:
+import Svg, {
+  Defs,
+  FeBlend,
+  FeColorMatrix,
+  FeComposite,
+  FeFlood,
+  FeOffset,
+  Filter,
+  G,
+  Path,
+  Rect,
+} from "react-native-svg";
 import FishIcon from "../src/components/icons/FishIcon";
 
 const AnimatedTouchableOpacity =
@@ -132,20 +144,217 @@ export default function ConfirmarCodigoScreen() {
                 </View>
 
                 <View style={styles.navigationRow}>
+                  {/* BOTAO DE VOLTAR (GLASS BUTTON) */}
                   <TouchableOpacity
-                    style={styles.iconButton}
+                    style={[
+                      styles.iconButton,
+                      {
+                        width: 44,
+                        height: 44,
+                        borderRadius: 15,
+                        overflow: "hidden",
+                        padding: 0,
+                        justifyContent: "center",
+                        alignItems: "center",
+                      },
+                    ]}
                     onPress={() => router.back()}
+                    activeOpacity={0.7}
                   >
-                    <BackArrowIcon />
+                    <View
+                      style={{
+                        ...StyleSheet.absoluteFillObject,
+                        backgroundColor: "rgba(0, 44, 59, 0.4)",
+                      }}
+                    />
+                    <Svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+                      <Rect
+                        x="0.35"
+                        y="0.35"
+                        width="43.3"
+                        height="43.3"
+                        rx="14.65"
+                        stroke="white"
+                        strokeOpacity="0.15"
+                        strokeWidth="0.7"
+                      />
+                      <G filter="url(#filter1_i_361_4879)">
+                        <Rect
+                          x="2.5"
+                          y="2.5"
+                          width="39"
+                          height="39"
+                          rx="15"
+                          fill="#EEE82C"
+                        />
+                        <Rect
+                          x="3"
+                          y="3"
+                          width="38"
+                          height="38"
+                          rx="14.5"
+                          stroke="#001A23"
+                          strokeOpacity="0.4"
+                        />
+                        <Path
+                          d="M25.2914 29.5C25.1986 29.5005 25.1067 29.4847 25.0209 29.4536C24.935 29.4225 24.857 29.3767 24.7911 29.3188L19.0349 24.2134C18.7069 23.9232 18.4466 23.5784 18.269 23.1988C18.0914 22.8192 18 22.4122 18 22.0013C18 21.5903 18.0914 21.1834 18.269 20.8038C18.4466 20.4242 18.7069 20.0794 19.0349 19.7892L24.7911 14.6838C24.8568 14.6255 24.9348 14.5793 25.0206 14.5478C25.1065 14.5162 25.1985 14.5 25.2914 14.5C25.3843 14.5 25.4763 14.5162 25.5621 14.5478C25.6479 14.5793 25.7259 14.6255 25.7916 14.6838C25.8573 14.742 25.9094 14.8112 25.9449 14.8873C25.9805 14.9635 25.9988 15.0451 25.9988 15.1274C25.9988 15.2098 25.9805 15.2914 25.9449 15.3676C25.9094 15.4437 25.8573 15.5129 25.7916 15.5711L20.0354 20.6765C19.6396 21.028 19.4173 21.5045 19.4173 22.0013C19.4173 22.4981 19.6396 22.9745 20.0354 23.326L25.7916 28.4314C25.8576 28.4895 25.91 28.5586 25.9458 28.6348C25.9816 28.7109 26 28.7926 26 28.8751C26 28.9576 25.9816 29.0393 25.9458 29.1154C25.91 29.1916 25.8576 29.2607 25.7916 29.3188C25.7258 29.3767 25.6477 29.4225 25.5618 29.4536C25.476 29.4847 25.3841 29.5005 25.2914 29.5Z"
+                          fill="#001A23"
+                        />
+                      </G>
+                      <Defs>
+                        <Filter
+                          id="filter1_i_361_4879"
+                          x="2.5"
+                          y="2.5"
+                          width="39"
+                          height="39"
+                          filterUnits="userSpaceOnUse"
+                        >
+                          <FeFlood
+                            floodOpacity="0"
+                            result="BackgroundImageFix"
+                          />
+                          <FeBlend
+                            mode="normal"
+                            in="SourceGraphic"
+                            in2="BackgroundImageFix"
+                            result="shape"
+                          />
+                          <FeColorMatrix
+                            in="SourceAlpha"
+                            type="matrix"
+                            values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+                            result="hardAlpha"
+                          />
+                          <FeOffset dy="-3" />
+                          <FeComposite
+                            in2="hardAlpha"
+                            operator="arithmetic"
+                            k2="-1"
+                            k3="1"
+                          />
+                          <FeColorMatrix
+                            type="matrix"
+                            values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"
+                          />
+                          <FeBlend
+                            mode="normal"
+                            in2="shape"
+                            result="effect1_innerShadow_361_4879"
+                          />
+                        </Filter>
+                      </Defs>
+                    </Svg>
                   </TouchableOpacity>
 
                   <Text style={styles.subtitleTitle}>Confirmar código</Text>
 
+                  {/* BOTAO DE FECHAR (X) COM ESTILO GLASS */}
                   <TouchableOpacity
-                    style={styles.iconButton}
+                    style={[
+                      styles.iconButton,
+                      {
+                        width: 44,
+                        height: 44,
+                        borderRadius: 15,
+                        overflow: "hidden",
+                        padding: 0,
+                        justifyContent: "center",
+                        alignItems: "center",
+                      },
+                    ]}
                     onPress={() => router.push("/login-email")}
+                    activeOpacity={0.7}
                   >
-                    <CloseIcon />
+                    <View
+                      style={{
+                        ...StyleSheet.absoluteFillObject,
+                        backgroundColor: "rgba(0, 44, 59, 0.4)",
+                      }}
+                    />
+                    <Svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+                      <Rect
+                        x="0.35"
+                        y="0.35"
+                        width="43.3"
+                        height="43.3"
+                        rx="14.65"
+                        stroke="white"
+                        strokeOpacity="0.15"
+                        strokeWidth="0.7"
+                      />
+                      <G filter="url(#filter1_i_361_4879_close)">
+                        <Rect
+                          x="2.5"
+                          y="2.5"
+                          width="39"
+                          height="39"
+                          rx="15"
+                          fill="#EEE82C"
+                        />
+                        <Rect
+                          x="3"
+                          y="3"
+                          width="38"
+                          height="38"
+                          rx="14.5"
+                          stroke="#001A23"
+                          strokeOpacity="0.4"
+                        />
+                        {/* Ícone de X perfeitamente centralizado */}
+                        <Path
+                          d="M16 28L28 16M16 16L28 28"
+                          stroke="#001A23"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </G>
+                      <Defs>
+                        {/* O id do filter foi levemente alterado para não dar conflito com o da seta na mesma tela */}
+                        <Filter
+                          id="filter1_i_361_4879_close"
+                          x="2.5"
+                          y="2.5"
+                          width="39"
+                          height="39"
+                          filterUnits="userSpaceOnUse"
+                        >
+                          <FeFlood
+                            floodOpacity="0"
+                            result="BackgroundImageFix"
+                          />
+                          <FeBlend
+                            mode="normal"
+                            in="SourceGraphic"
+                            in2="BackgroundImageFix"
+                            result="shape"
+                          />
+                          <FeColorMatrix
+                            in="SourceAlpha"
+                            type="matrix"
+                            values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+                            result="hardAlpha"
+                          />
+                          <FeOffset dy="-3" />
+                          <FeComposite
+                            in2="hardAlpha"
+                            operator="arithmetic"
+                            k2="-1"
+                            k3="1"
+                          />
+                          <FeColorMatrix
+                            type="matrix"
+                            values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"
+                          />
+                          <FeBlend
+                            mode="normal"
+                            in2="shape"
+                            result="effect1_innerShadow_361_4879_close"
+                          />
+                        </Filter>
+                      </Defs>
+                    </Svg>
                   </TouchableOpacity>
                 </View>
 
@@ -238,32 +447,6 @@ export default function ConfirmarCodigoScreen() {
 // ==========================================
 // ÍCONES SVG INLINE
 // ==========================================
-const BackArrowIcon = () => (
-  <Svg width="20" height="17" viewBox="0 0 20 17" fill="none">
-    <Path
-      d="M8.25 15.75L0.75 8.25M0.75 8.25L8.25 0.75M0.75 8.25H18.75"
-      stroke="#F8F9FA"
-      strokeOpacity="0.5"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-const CloseIcon = () => (
-  <Svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-    <Path
-      d="M0.75 12.75L12.75 0.750001M0.75 0.75L12.75 12.75"
-      stroke="#F8F9FA"
-      strokeOpacity="0.5"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
 const ArrowIcon = ({ color }: { color: string }) => (
   <Svg width="19" height="19" viewBox="0 0 19 19" fill="none">
     <Path
@@ -305,7 +488,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   iconButton: {
-    width: 24,
+    width: 24, // Original style mantido, a sobrescrita está no componente inline
     height: 24,
     justifyContent: "center",
     alignItems: "center",
