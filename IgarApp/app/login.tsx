@@ -90,7 +90,7 @@ export default function LoginScreen() {
         <AnimatedTouchableOpacity
           style={[styles.continueButton, { backgroundColor }]}
           disabled={!isButtonActive}
-          onPress={() => router.replace("/home_user")}
+          onPress={() => router.replace("../home_ong")}
         >
           <Animated.Text
             style={[styles.continueButtonText, { color: textColor }]}
