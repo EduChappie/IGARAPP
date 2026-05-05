@@ -190,7 +190,11 @@ export default function HomeUserScreen() {
             <FishNavIcon />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.tabIcon} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.tabIcon}
+            activeOpacity={0.7}
+            onPress={() => router.push("/historico")}
+          >
             <RefreshIcon />
           </TouchableOpacity>
         </BlurView>
