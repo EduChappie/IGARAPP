@@ -1,121 +1,127 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React, { useEffect, useRef } from "react";
-import {
-  Animated,
-  Dimensions,
-  Easing,
-  StatusBar,
-  StyleSheet,
-  View,
-} from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Animated, Dimensions, Easing, StyleSheet } from "react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
-import FishIcon from "../src/components/icons/FishIcon"; // Ajuste o caminho se necessário
+import FishIcon from "../src/components/icons/FishIcon";
 
-// Pegamos a altura da tela para fazer a bola vir lá de baixo
 const { height } = Dimensions.get("window");
 
 export default function SplashScreen() {
   const router = useRouter();
 
-  // 1. Animação de subida (Começa fora da tela/no rodapé)
+  // Animações
   const translateY = useRef(new Animated.Value(height / 2 + 100)).current;
-
-  // 2. Animação de giro 3D (Vai de 0 até 1)
   const flip = useRef(new Animated.Value(0)).current;
+  const fadeOutOpacity = useRef(new Animated.Value(1)).current;
+
+  // Flag para evitar recarregar animação se a pessoa voltar (back button)
+  const [animationStarted, setAnimationStarted] = useState(false);
 
   useEffect(() => {
-    // Sequência de animações exatamente como no Figma
-    Animated.sequence([
-      // 1º Passo: Delay inicial antes de começar a subir
-      Animated.delay(800),
+    if (animationStarted) return;
+    setAnimationStarted(true);
 
-      // 2º Passo: Sobe para o centro com efeito Spring (Massa 1, Stiffness 400, Damping 15)
-      Animated.spring(translateY, {
-        toValue: 0,
-        stiffness: 400,
-        damping: 15,
-        mass: 1,
-        useNativeDriver: true,
-      }),
+    const checkMemoryAndAnimate = async () => {
+      try {
+        const hasSeen = await AsyncStorage.getItem("hasSeenTutorial");
+        let nextRoute = "/firstscreen";
 
-      // 3º Passo: Pequena pausa no meio da tela
-      Animated.delay(150),
+        if (hasSeen !== "true") {
+          await AsyncStorage.setItem("hasSeenTutorial", "true");
+          nextRoute = "/tutorial";
+        }
 
-      // 4º Passo: Gira a bola revelando o ícone (Curva Cubic-Bezier do Figma)
-      Animated.timing(flip, {
-        toValue: 1,
-        duration: 350, // Tempo de duração do flip
-        easing: Easing.bezier(0.7, -0.4, 0.4, 1.4), // O efeitinho de elástico
-        useNativeDriver: true,
-      }),
+        // Roda as animações normais
+        Animated.sequence([
+          Animated.delay(500), // Delay reduzido
+          Animated.spring(translateY, {
+            toValue: 0,
+            stiffness: 400,
+            damping: 15,
+            mass: 1,
+            useNativeDriver: true,
+          }),
+          Animated.delay(100),
+          Animated.timing(flip, {
+            toValue: 1,
+            duration: 350,
+            easing: Easing.bezier(0.7, -0.4, 0.4, 1.4),
+            useNativeDriver: true,
+          }),
+          Animated.delay(800), // Tempo que a tela fica parada mostrando o logo final
+        ]).start(() => {
+          // O TRUQUE MASTER:
+          // Primeiro nós dizemos pro roteador colocar a próxima tela "por baixo".
+          // Como usamos push() e a Splash está opaca, o usuário ainda vê a Splash.
+          router.push(nextRoute as any);
 
-      // 5º Passo: Mantém o ícone na tela por um tempo
-      Animated.delay(800),
-    ]).start(() => {
-      // Quando toda a animação terminar, redireciona para a tela de Login!
-      // Usamos 'replace' para que o usuário não consiga voltar para essa tela de animação.
-      router.replace("/tutorial");
-    });
-  }, []);
+          // Agora, damos um segundinho para a tela nova "renderizar a tinta" por trás...
+          setTimeout(() => {
+            // E então, esmaecemos a Splash Screen para revelar a tela pronta!
+            Animated.timing(fadeOutOpacity, {
+              toValue: 0,
+              duration: 300, // Suave
+              useNativeDriver: true,
+            }).start(() => {
+              // Somente quando ficou invisível, a gente joga a Splash no lixo de verdade.
+              router.replace(nextRoute as any);
+            });
+          }, 100);
+        });
+      } catch (error) {
+        console.log("Erro na memória:", error);
+        router.replace("/firstscreen");
+      }
+    };
 
-  // --- MATEMÁTICA DO GIRO 3D ---
-  // A frente vai de 0º até 180º (e some na metade)
+    checkMemoryAndAnimate();
+  }, [animationStarted]);
+
   const frontRotateY = flip.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "180deg"],
   });
 
-  // O verso começa invertido (180º) e gira até 360º para ficar de frente
   const backRotateY = flip.interpolate({
     inputRange: [0, 1],
     outputRange: ["180deg", "360deg"],
   });
 
   return (
-    <View style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="#001A23"
-        translucent
-      />
-
-      {/* Este é o "elevador" que move tudo de baixo para o centro */}
+    // Essa View precisa cobrir absolutamente tudo, como uma cortina.
+    <Animated.View style={[styles.container, { opacity: fadeOutOpacity }]}>
       <Animated.View
         style={[styles.centerWrapper, { transform: [{ translateY }] }]}
       >
-        {/* --- FRENTE: A Bola Redonda --- */}
         <Animated.View
           style={[
             styles.absoluteCenter,
             {
               transform: [{ perspective: 1000 }, { rotateY: frontRotateY }],
-              backfaceVisibility: "hidden", // Esconde quando vira de costas
+              backfaceVisibility: "hidden",
             },
           ]}
         >
           <BallSVG />
         </Animated.View>
 
-        {/* --- VERSO: O Ícone do Aplicativo --- */}
         <Animated.View
           style={[
             styles.absoluteCenter,
             {
               transform: [{ perspective: 1000 }, { rotateY: backRotateY }],
-              backfaceVisibility: "hidden", // Esconde quando vira de costas
+              backfaceVisibility: "hidden",
             },
           ]}
         >
           <FishIcon width={50} height={50} />
         </Animated.View>
       </Animated.View>
-    </View>
+    </Animated.View>
   );
 }
 
-// ==========================================
-// SVG DA BOLA (Extraído do Figma)
-// ==========================================
 const BallSVG = () => (
   <Svg width="50" height="50" viewBox="0 0 50 50" fill="none">
     <Defs>
@@ -135,15 +141,16 @@ const BallSVG = () => (
   </Svg>
 );
 
-// ==========================================
-// ESTILOS
-// ==========================================
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    // "absoluteFillObject" faz a tela virar uma cortina real
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: "#001A23",
     justifyContent: "center",
     alignItems: "center",
+    // Elevações extremas para garantir que fica por cima na transição!
+    zIndex: 9999,
+    elevation: 9999,
   },
   centerWrapper: {
     width: 50,

@@ -123,6 +123,20 @@ const FEED_DATA = [
 export default function HomeUserScreen() {
   const router = useRouter();
 
+  // Função dedicada para a NavBar (usa replace para não acumular memória)
+  const handleTabNav = (rota: string) => {
+    setTimeout(() => {
+      router.replace(rota as any);
+    }, 50);
+  };
+
+  // Função para botões normais que empilham tela
+  const handleNav = (rota: string) => {
+    setTimeout(() => {
+      router.push(rota as any);
+    }, 50);
+  };
+
   return (
     <View style={styles.mainContainer}>
       <StatusBar barStyle="light-content" backgroundColor="#001A23" />
@@ -160,7 +174,7 @@ export default function HomeUserScreen() {
           {/* LISTA DE CARDS (FEED) */}
           <View style={styles.feedContainer}>
             {FEED_DATA.map((item) => (
-              <ProjectCard key={item.id} data={item} />
+              <ProjectCard key={item.id} data={item} handleNav={handleNav} />
             ))}
           </View>
         </SafeAreaView>
@@ -173,27 +187,26 @@ export default function HomeUserScreen() {
           style={StyleSheet.absoluteFillObject}
         />
         <BlurView intensity={20} tint="dark" style={styles.tabBarContainer}>
-          <TouchableOpacity style={styles.tabIconActive} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.tabIconActive} activeOpacity={1}>
             <HomeIcon />
           </TouchableOpacity>
 
-          {/* LINK PARA O PERFIL QUE SEU COLEGA CRIOU */}
           <TouchableOpacity
             style={styles.tabIcon}
-            activeOpacity={0.7}
-            onPress={() => router.push("../perfil_pf")}
+            activeOpacity={0.6}
+            onPress={() => handleTabNav("/perfil_pf")}
           >
             <UserIcon />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.tabIcon} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.tabIcon} activeOpacity={0.6}>
             <FishNavIcon />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.tabIcon}
-            activeOpacity={0.7}
-            onPress={() => router.push("../historico")}
+            activeOpacity={0.6}
+            onPress={() => handleTabNav("/historico")}
           >
             <RefreshIcon />
           </TouchableOpacity>
@@ -206,8 +219,13 @@ export default function HomeUserScreen() {
 // ==========================================
 // COMPONENTE DO CARD COM CARROSSEL ANIMADO
 // ==========================================
-const ProjectCard = ({ data }: { data: any }) => {
-  const router = useRouter();
+const ProjectCard = ({
+  data,
+  handleNav,
+}: {
+  data: any;
+  handleNav: (rota: string) => void;
+}) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const activeIndexRef = useRef(0);
@@ -263,7 +281,7 @@ const ProjectCard = ({ data }: { data: any }) => {
       {/* CORPO DO CARD VERDE (AGORA CLICÁVEL COM ROTA) */}
       <TouchableOpacity
         activeOpacity={0.9}
-        onPress={() => router.push("../detalhes-evento")}
+        onPress={() => handleNav("/detalhes-evento")}
         style={styles.cardBody}
       >
         {/* CARROSSEL DE IMAGENS */}
@@ -466,21 +484,6 @@ const ClockIcon = () => (
       fill="#001A23"
       fillOpacity="0.5"
     />
-    <Path
-      d="M8.00602 -1.9232e-05C7.89552 -1.9232e-05 7.78953 0.0438795 7.71139 0.12202C7.63325 0.20016 7.58936 0.306141 7.58936 0.416647C7.58936 0.527154 7.63325 0.633135 7.71139 0.711275C7.78953 0.789415 7.89552 0.833314 8.00602 0.833314C8.15132 0.822269 8.29734 0.840764 8.4353 0.887681C8.57325 0.934599 8.70027 1.00897 8.80871 1.10631C8.91714 1.20364 9.00474 1.32193 9.06622 1.45404C9.1277 1.58615 9.16179 1.72934 9.16644 1.87498C9.16644 1.98549 9.21034 2.09147 9.28848 2.16961C9.36662 2.24775 9.4726 2.29165 9.58311 2.29165C9.69361 2.29165 9.79959 2.24775 9.87773 2.16961C9.95587 2.09147 9.99977 1.98549 9.99977 1.87498C9.99444 1.62019 9.93835 1.36902 9.83478 1.13616C9.73121 0.903304 9.58224 0.693442 9.39659 0.518849C9.21094 0.344257 8.99234 0.208442 8.75357 0.119349C8.5148 0.0302565 8.26066 -0.0103244 8.00602 -1.9232e-05Z"
-      fill="#001A23"
-      fillOpacity="0.5"
-    />
-    <Path
-      d="M0.833333 1.87498C0.837978 1.72934 0.872068 1.58615 0.933549 1.45404C0.995031 1.32193 1.08263 1.20364 1.19106 1.10631C1.2995 1.00897 1.42652 0.934599 1.56447 0.887681C1.70243 0.840764 1.84846 0.822269 1.99375 0.833314C2.10426 0.833314 2.21024 0.789415 2.28838 0.711275C2.36652 0.633135 2.41042 0.527154 2.41042 0.416647C2.41042 0.306141 2.36652 0.20016 2.28838 0.12202C2.21024 0.0438795 2.10426 -1.9232e-05 1.99375 -1.9232e-05C1.73911 -0.0103244 1.48497 0.0302565 1.2462 0.119349C1.00743 0.208442 0.788827 0.344257 0.603178 0.518849C0.417528 0.693442 0.268561 0.903304 0.164992 1.13616C0.061423 1.36902 0.00533177 1.62019 0 1.87498C0 1.98549 0.0438987 2.09147 0.122039 2.16961C0.200179 2.24775 0.30616 2.29165 0.416667 2.29165C0.527174 2.29165 0.633154 2.24775 0.711294 2.16961C0.789435 2.09147 0.833333 1.98549 0.833333 1.87498Z"
-      fill="#001A23"
-      fillOpacity="0.5"
-    />
-    <Path
-      d="M5.41683 4.8275V2.91667C5.41683 2.80616 5.37293 2.70018 5.29479 2.62204C5.21665 2.5439 5.11067 2.5 5.00016 2.5C4.88966 2.5 4.78368 2.5439 4.70554 2.62204C4.62739 2.70018 4.5835 2.80616 4.5835 2.91667V5C4.58352 5.1105 4.62743 5.21646 4.70558 5.29458L5.95558 6.54458C6.03416 6.62048 6.13941 6.66248 6.24866 6.66153C6.35791 6.66058 6.46242 6.61676 6.53967 6.53951C6.61692 6.46225 6.66074 6.35775 6.66169 6.2485C6.66264 6.13925 6.62065 6.034 6.54475 5.95542L5.41683 4.8275Z"
-      fill="#001A23"
-      fillOpacity="0.5"
-    />
   </Svg>
 );
 
@@ -541,9 +544,6 @@ const RefreshIcon = () => (
   </Svg>
 );
 
-// ==========================================
-// ESTILOS
-// ==========================================
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
@@ -553,6 +553,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: Platform.OS === "ios" ? 20 : 40,
     marginBottom: 25,
+    marginTop: 25,
   },
   headerTextRow: {
     flexDirection: "row",
@@ -618,14 +619,6 @@ const styles = StyleSheet.create({
     height: 28,
     justifyContent: "center",
     alignItems: "center",
-  },
-  avatarFallback: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "rgba(232, 241, 242, 0.7)",
-    backgroundColor: "#002C3B",
   },
   orgName: {
     fontSize: 15,

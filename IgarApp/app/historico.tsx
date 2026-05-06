@@ -56,6 +56,20 @@ const HISTORICO_FEED_DATA = [
 export default function HistoricoScreen() {
   const router = useRouter();
 
+  // --- NAVEGAÇÃO DE ABAS (NavBar) - Desliza sem pesar a memória ---
+  const handleTabNav = (rota: string) => {
+    setTimeout(() => {
+      router.replace(rota as any);
+    }, 50);
+  };
+
+  // --- NAVEGAÇÃO DE TELAS (Push) ---
+  const handleNav = (rota: string) => {
+    setTimeout(() => {
+      router.push(rota as any);
+    }, 50);
+  };
+
   return (
     <View style={styles.mainContainer}>
       <StatusBar barStyle="light-content" backgroundColor="#001A23" />
@@ -78,7 +92,7 @@ export default function HistoricoScreen() {
           {/* LISTA DE CARDS PADRÃO HOME COM BLUR (FEED) */}
           <View style={styles.feedContainer}>
             {HISTORICO_FEED_DATA.map((item) => (
-              <HistoryCard key={item.id} data={item} />
+              <HistoryCard key={item.id} data={item} handleNav={handleNav} />
             ))}
           </View>
         </SafeAreaView>
@@ -93,21 +107,21 @@ export default function HistoricoScreen() {
         <BlurView intensity={20} tint="dark" style={styles.tabBarContainer}>
           <TouchableOpacity
             style={styles.tabIcon}
-            activeOpacity={0.7}
-            onPress={() => router.push("/home_user")}
+            activeOpacity={0.6}
+            onPress={() => handleTabNav("/home_user")}
           >
             <HomeIconInactive />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.tabIcon}
-            activeOpacity={0.7}
-            onPress={() => router.push("/perfil_pf")}
+            activeOpacity={0.6}
+            onPress={() => handleTabNav("/perfil_pf")}
           >
             <UserIcon />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.tabIcon} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.tabIcon} activeOpacity={0.6}>
             <FishNavIcon />
           </TouchableOpacity>
 
@@ -123,8 +137,13 @@ export default function HistoricoScreen() {
 // ==========================================
 // COMPONENTE DO CARD DE HISTÓRICO
 // ==========================================
-const HistoryCard = ({ data }: { data: any }) => {
-  const router = useRouter();
+const HistoryCard = ({
+  data,
+  handleNav,
+}: {
+  data: any;
+  handleNav: (rota: string) => void;
+}) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const activeIndexRef = useRef(0);
@@ -178,7 +197,7 @@ const HistoryCard = ({ data }: { data: any }) => {
       {/* CORPO DO CARD VERDE (CLICÁVEL PARA DETALHES DO HISTÓRICO) */}
       <TouchableOpacity
         activeOpacity={0.9}
-        onPress={() => router.push("/historico-detalhes")}
+        onPress={() => handleNav("/historico-detalhes")}
         style={styles.cardBody}
       >
         {/* CARROSSEL DE IMAGENS COM BLUR E TAG FINALIZADO */}
@@ -380,6 +399,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 24,
     marginBottom: 20,
+    marginTop: 65,
   },
   headerTitle: {
     fontSize: 24,
@@ -467,10 +487,6 @@ const styles = StyleSheet.create({
   cardImage: {
     width: "100%",
     height: "100%",
-  },
-  historyBlurOverlay: {
-    flex: 1,
-    borderRadius: 30,
   },
   pagination: {
     flexDirection: "row",
