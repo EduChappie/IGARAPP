@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   View,
   Text,
+  StyleSheet, // <-- Adicionado para o botão
 } from "react-native";
 import { styles, extra } from "@/styles/_style";
 import { LinearGradient } from "expo-linear-gradient";
@@ -12,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { cadastroExtra } from "@/styles/cadastro_extra_styles";
 import { cadastroSuccessExtra } from "@/styles/cadastro_sucess_extra_styles";
 import { router } from "expo-router";
+import Svg, { Rect, G, Path } from "react-native-svg"; // <-- Importado para desenhar o botão quadrado
 
 export default function cadastropf() {
   const [step, setStep] = useState(1);
@@ -44,6 +46,14 @@ export default function cadastropf() {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#012A36" }}>
+      
+      {/* BOTÃO QUADRADO DE VOLTAR (Flutuando no topo, visível apenas na etapa 1) */}
+      {step === 1 && (
+        <View style={{ position: 'absolute', top: 60, left: 24, zIndex: 10 }}>
+            <TopGlassButton onPress={() => router.back()} />
+        </View>
+      )}
+
       <View style={styles.mainContainer}>
         
         {/* IMAGEM FIXA NO FUNDO */}
@@ -84,11 +94,11 @@ export default function cadastropf() {
                     <Image source={require('@/assets/images/logo.png')} style={styles.applicationLogoImage} />
 
                     <Text style={cadastroSuccessExtra.successTitle}>
-                        Parabéns! Sua conta foi{'\n'}criada com sucesso
+                        Parabéns! Sua conta foi{"\n"}criada com sucesso
                     </Text>
 
                     <Text style={extra.subtitleDescriptionText}>
-                        Um app para aqueles que querem ajudar a amazônia{'\n'}a se tornar um lugar mais limpo e digno
+                        Um app para aqueles que querem ajudar a amazônia{"\n"}a se tornar um lugar mais limpo e digno
                     </Text>
 
                     <View style={[cadastroExtra.stepContainer, cadastroSuccessExtra.stepSpacing, { marginBottom: 20 }]}>
@@ -106,7 +116,7 @@ export default function cadastropf() {
                 {/* marginTop: 80 joga as infos de sucesso para cima e os termos para baixo */}
                 <View style={{ marginTop: 80 }}>
                     <Text style={extra.termsAndPrivacyText}>
-                        Ao criar sua conta no <Text style={styles.destaque}>IgarApp</Text>, você estará concordando{'\n'}
+                        Ao criar sua conta no <Text style={styles.destaque}>IgarApp</Text>, você estará concordando{"\n"}
                         com os <Text style={styles.destaque}><Text style={styles.underline}>Termos de Uso</Text></Text> e <Text style={styles.destaque}><Text style={styles.underline}>Política de Privacidade</Text></Text>
                     </Text>
                 </View>
@@ -255,3 +265,60 @@ export default function cadastropf() {
     </View>
   );
 }
+
+// ==========================================
+// COMPONENTE DO BOTÃO DE VOLTAR
+// ==========================================
+const TopGlassButton = ({ onPress }: { onPress: () => void }) => (
+    <TouchableOpacity
+      style={{
+        width: 44,
+        height: 44,
+        borderRadius: 15,
+        overflow: "hidden",
+        justifyContent: "center",
+        alignItems: "center"
+      }}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View
+        style={{
+          ...StyleSheet.absoluteFillObject,
+          backgroundColor: "rgba(0, 44, 59, 0.4)",
+        }}
+      />
+      <Svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+        <Rect
+          x="0.35"
+          y="0.35"
+          width="43.3"
+          height="43.3"
+          rx="14.65"
+          stroke="white"
+          strokeOpacity="0.15"
+          strokeWidth="0.7"
+        />
+        <G>
+          <Rect x="2.5" y="2.5" width="39" height="39" rx="15" fill="#EEE82C" />
+          <Rect
+            x="3"
+            y="3"
+            width="38"
+            height="38"
+            rx="14.5"
+            stroke="#001A23"
+            strokeOpacity="0.4"
+          />
+          <Path
+            d="M25 15 L 18 22 L 25 29"
+            stroke="#001A23"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
+        </G>
+      </Svg>
+    </TouchableOpacity>
+);

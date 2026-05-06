@@ -53,7 +53,7 @@ export default function index() {
           
           {/* Botão Voluntário */}
           <TouchableOpacity
-            onPress={() => router.push('/cadastropf')}
+            onPress={() => router.push('../cadastropf')}
             style={[styles.primaryActionButton, { marginBottom: 16 }]}
           >
             <View style={styles.buttonTextContainer}>
@@ -69,7 +69,7 @@ export default function index() {
 
           {/* Botão Organizador (ONG) */}
           <TouchableOpacity
-            onPress={() => router.push('/cadastro_ong')}
+            onPress={() => router.push('../cadastro_ong')}
             style={[styles.secondaryActionButton, { marginBottom: 20 }]}
           >
             <View style={styles.buttonTextContainer}>
@@ -88,7 +88,7 @@ export default function index() {
             Já possui conta?{' '}
             <Text 
               style={styles.underline} 
-              onPress={() => router.push('/login')}
+              onPress={() => router.push('/login_pl')}
             >
               Efetuar Login.
             </Text>

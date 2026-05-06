@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { Image, TextInput, TouchableOpacity, View, Text } from "react-native";
+import { 
+    Image, 
+    TextInput, 
+    TouchableOpacity, 
+    View, 
+    Text, 
+    StyleSheet // <-- Adicionado para o botão
+} from "react-native";
 import { styles, extra } from "@/styles/_style";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -7,6 +14,7 @@ import { cadastroExtra } from "@/styles/cadastro_extra_styles";
 import { cadastroTwoExtra } from "@/styles/cadastro_two_extra_styles";
 import { cadastroSuccessExtra } from "@/styles/cadastro_sucess_extra_styles";
 import { router } from "expo-router";
+import Svg, { Rect, G, Path } from "react-native-svg"; // <-- Importado para desenhar o botão quadrado
 
 export default function cadastro_pj() {
     // Estado principal que controla em qual etapa o usuário está
@@ -52,6 +60,20 @@ export default function cadastro_pj() {
 
     return (
         <View style={{ flex: 1, backgroundColor: '#012A36' }}>
+            
+            {/* BOTÃO QUADRADO DE VOLTAR (Flutuando no topo, visível apenas nas etapas de formulário) */}
+            {step < 4 && (
+                <View style={{ position: 'absolute', top: 60, left: 24, zIndex: 10 }}>
+                    <TopGlassButton onPress={() => {
+                        if (step > 1) {
+                            setStep(step - 1); // Volta uma etapa no form
+                        } else {
+                            router.back(); // Fecha a tela se estiver na etapa 1
+                        }
+                    }} />
+                </View>
+            )}
+
             <View style={styles.mainContainer}>
                 
                 {/* IMAGEM FIXA NO FUNDO */}
@@ -337,3 +359,60 @@ export default function cadastro_pj() {
         </View>
     );
 }
+
+// ==========================================
+// COMPONENTE DO BOTÃO DE VOLTAR
+// ==========================================
+const TopGlassButton = ({ onPress }: { onPress: () => void }) => (
+    <TouchableOpacity
+      style={{
+        width: 44,
+        height: 44,
+        borderRadius: 15,
+        overflow: "hidden",
+        justifyContent: "center",
+        alignItems: "center"
+      }}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View
+        style={{
+          ...StyleSheet.absoluteFillObject,
+          backgroundColor: "rgba(0, 44, 59, 0.4)",
+        }}
+      />
+      <Svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+        <Rect
+          x="0.35"
+          y="0.35"
+          width="43.3"
+          height="43.3"
+          rx="14.65"
+          stroke="white"
+          strokeOpacity="0.15"
+          strokeWidth="0.7"
+        />
+        <G>
+          <Rect x="2.5" y="2.5" width="39" height="39" rx="15" fill="#EEE82C" />
+          <Rect
+            x="3"
+            y="3"
+            width="38"
+            height="38"
+            rx="14.5"
+            stroke="#001A23"
+            strokeOpacity="0.4"
+          />
+          <Path
+            d="M25 15 L 18 22 L 25 29"
+            stroke="#001A23"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
+        </G>
+      </Svg>
+    </TouchableOpacity>
+);
