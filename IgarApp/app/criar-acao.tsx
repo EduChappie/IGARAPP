@@ -1,4 +1,4 @@
-import { BlurView } from "expo-blur";
+import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -43,6 +43,33 @@ const NOME_MESES = [
 export default function CriarAcaoScreen() {
   const router = useRouter();
 
+  // --- ESTADOS DOS INPUTS ---
+  const [titulo, setTitulo] = useState("");
+  const [cidade, setCidade] = useState("");
+  const [estado, setEstado] = useState("");
+  const [horaInicio, setHoraInicio] = useState("");
+  const [horaFim, setHoraFim] = useState("");
+  const [estimativaVoluntarios, setEstimativaVoluntarios] = useState("");
+  const [descricao, setDescricao] = useState("");
+  const [orientacoes, setOrientacoes] = useState("");
+
+  // --- LÓGICA DAS METAS ---
+  const [metas, setMetas] = useState<string[]>([]);
+  const [metaInput, setMetaInput] = useState("");
+
+  const adicionarMeta = () => {
+    if (metaInput.trim() !== "") {
+      setMetas([...metas, metaInput.trim()]);
+      setMetaInput("");
+    }
+  };
+
+  const removerMeta = (index: number) => {
+    const novasMetas = [...metas];
+    novasMetas.splice(index, 1);
+    setMetas(novasMetas);
+  };
+
   // --- LÓGICA DINÂMICA DO CALENDÁRIO ---
 
   // Data real de hoje (para validar o círculo azul com pontinho)
@@ -78,6 +105,18 @@ export default function CriarAcaoScreen() {
     setCurrentDate(new Date(anoVisualizado, mesVisualizado + 1, 1));
   };
 
+  // Lógica de Validação do Formulário
+  const isFormValid =
+    titulo !== "" &&
+    cidade !== "" &&
+    estado !== "" &&
+    horaInicio !== "" &&
+    horaFim !== "" &&
+    descricao !== "" &&
+    estimativaVoluntarios !== "" &&
+    metas.length > 0 &&
+    orientacoes !== "";
+
   return (
     <View style={styles.mainContainer}>
       <StatusBar
@@ -111,30 +150,36 @@ export default function CriarAcaoScreen() {
           </View>
 
           <Text style={styles.descriptionHeader}>
-            Crypto ipsum bitcoin ethereum dogecoin litecoin. Polkadot kava
-            compound polygon cosmos solana ICON flow ren.
+            Preencha os campos abaixo para criar uma nova ação de voluntariado e
+            compartilhar com a comunidade.
           </Text>
 
-          {/* FORMULÁRIO PARTE 1 */}
+          {/* FORMULÁRIO */}
+          {/* TÍTULO DA AÇÃO */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nome do local</Text>
+            <Text style={styles.label}>Título da ação</Text>
             <View style={styles.inputContainer}>
               <TextInput
-                placeholder="Coloque o nome da Localização"
+                placeholder="Ex: Igarapé do Franco"
                 placeholderTextColor="#FFFFFFB2"
                 style={styles.textInput}
+                value={titulo}
+                onChangeText={setTitulo}
               />
             </View>
           </View>
 
+          {/* CIDADE E ESTADO */}
           <View style={styles.rowInputs}>
             <View style={[styles.inputGroup, { flex: 1 }]}>
               <Text style={styles.label}>Cidade</Text>
               <View style={styles.inputContainer}>
                 <TextInput
-                  placeholder="Selecionar Cidade"
+                  placeholder="Manaus"
                   placeholderTextColor="#FFFFFFB2"
                   style={styles.textInput}
+                  value={cidade}
+                  onChangeText={setCidade}
                 />
               </View>
             </View>
@@ -142,36 +187,43 @@ export default function CriarAcaoScreen() {
               <Text style={styles.label}>Estado</Text>
               <View style={styles.inputContainer}>
                 <TextInput
-                  placeholder="Selecionar Estado"
+                  placeholder="Amazonas"
                   placeholderTextColor="#FFFFFFB2"
                   style={styles.textInput}
+                  value={estado}
+                  onChangeText={setEstado}
                 />
               </View>
             </View>
           </View>
 
+          {/* HORÁRIO DO EVENTO */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Horário do evento</Text>
             <View style={styles.timeRow}>
               <View style={[styles.inputContainer, { flex: 1 }]}>
                 <TextInput
-                  placeholder="XX:XX"
+                  placeholder="14:25"
                   placeholderTextColor="#FFFFFFB2"
                   style={styles.textInput}
+                  value={horaInicio}
+                  onChangeText={setHoraInicio}
                 />
               </View>
               <View style={styles.timeDash} />
               <View style={[styles.inputContainer, { flex: 1 }]}>
                 <TextInput
-                  placeholder="XX:XX"
+                  placeholder="17:00"
                   placeholderTextColor="#FFFFFFB2"
                   style={styles.textInput}
+                  value={horaFim}
+                  onChangeText={setHoraFim}
                 />
               </View>
             </View>
           </View>
 
-          {/* CARD DE DATA SELECIONADA (AZUL 3D) */}
+          {/* CARD DE DATA SELECIONADA */}
           <View style={styles.dateDisplayCard}>
             <LinearGradient
               colors={["#0083B1", "#05506B"]}
@@ -229,15 +281,12 @@ export default function CriarAcaoScreen() {
             </View>
 
             <View style={styles.daysGrid}>
-              {/* Espaços vazios do início do mês */}
               {espacosVazios.map((_, i) => (
                 <View key={`empty-${i}`} style={styles.dayCellContainer} />
               ))}
 
-              {/* Dias do mês */}
               {arrayDias.map((dia) => {
                 const isSelected = selectedDay === dia;
-                // Validação REAL de hoje: tem que ser o mesmo dia, mesmo mês e mesmo ano!
                 const isToday =
                   dia === diaReal &&
                   mesVisualizado === mesReal &&
@@ -250,7 +299,7 @@ export default function CriarAcaoScreen() {
                       style={[
                         styles.dayCircle,
                         isSelected && styles.daySelected,
-                        isToday && !isSelected && styles.dayToday, // Azul só se for hoje e NÃO estiver selecionado
+                        isToday && !isSelected && styles.dayToday,
                       ]}
                     >
                       <Text
@@ -278,57 +327,100 @@ export default function CriarAcaoScreen() {
             </View>
           </View>
 
-          {/* FORMULÁRIO PARTE 2 */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Quantidade de voluntários</Text>
-            <View style={styles.inputContainer}>
-              <TextInput
-                placeholder="Selecione a quantidade de voluntários"
-                placeholderTextColor="#FFFFFFB2"
-                style={styles.textInput}
-              />
-            </View>
-          </View>
-
+          {/* DESCRIÇÃO DO EVENTO */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Descrição do evento</Text>
             <View
               style={[
                 styles.inputContainer,
-                { height: 80, alignItems: "flex-start" },
+                { height: 86, alignItems: "flex-start", paddingTop: 10 },
               ]}
             >
-              <TouchableOpacity style={styles.addGoalBtn}>
-                <BlurView
-                  intensity={10}
-                  style={StyleSheet.absoluteFillObject}
-                />
-                <PlusIcon />
-                <Text style={styles.addGoalText}>Adicionar meta</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Metas do evento</Text>
-            <View style={[styles.inputContainer, { height: 86 }]}>
               <TextInput
                 placeholder="Escreva a descrição do evento com o máximo de detalhes..."
                 placeholderTextColor="#FFFFFFB2"
                 multiline
-                style={styles.textInput}
+                style={[styles.textInput, { textAlignVertical: "top" }]}
+                value={descricao}
+                onChangeText={setDescricao}
               />
             </View>
           </View>
 
+          {/* ESTIMATIVA DE VOLUNTÁRIOS */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Estimativa de voluntários</Text>
+            <View style={styles.inputContainer}>
+              <TextInput
+                placeholder="Ex: 25"
+                placeholderTextColor="#FFFFFFB2"
+                style={styles.textInput}
+                keyboardType="numeric"
+                value={estimativaVoluntarios}
+                onChangeText={setEstimativaVoluntarios}
+              />
+            </View>
+          </View>
+
+          {/* METAS DO EVENTO */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Metas do evento</Text>
+
+            {/* Input + Botão de '+' */}
+            <View style={styles.metaInputRow}>
+              <View style={[styles.inputContainer, { flex: 1 }]}>
+                <TextInput
+                  placeholder="Ex: Levar saco de lixo grande..."
+                  placeholderTextColor="#FFFFFFB2"
+                  style={styles.textInput}
+                  value={metaInput}
+                  onChangeText={setMetaInput}
+                />
+              </View>
+              <TouchableOpacity
+                onPress={adicionarMeta}
+                style={styles.addMetaBtn}
+              >
+                <PlusIcon />
+              </TouchableOpacity>
+            </View>
+
+            {/* Lista de Metas Transformadas em 'Pílulas' */}
+            <View style={styles.metasList}>
+              {metas.map((meta, index) => (
+                <View key={index} style={styles.metaPill}>
+                  <Text style={styles.metaPillText}>{meta}</Text>
+                  <TouchableOpacity
+                    onPress={() => removerMeta(index)}
+                    style={styles.metaRemoveBtn}
+                  >
+                    <Ionicons
+                      name="close-circle"
+                      size={16}
+                      color="rgba(255,255,255,0.5)"
+                    />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* ORIENTAÇÕES PARA OS VOLUNTÁRIOS */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Orientações para os voluntários</Text>
-            <View style={[styles.inputContainer, { height: 86 }]}>
+            <View
+              style={[
+                styles.inputContainer,
+                { height: 86, alignItems: "flex-start", paddingTop: 10 },
+              ]}
+            >
               <TextInput
                 placeholder="Escreva as orientações do evento..."
                 placeholderTextColor="#FFFFFFB2"
                 multiline
-                style={styles.textInput}
+                style={[styles.textInput, { textAlignVertical: "top" }]}
+                value={orientacoes}
+                onChangeText={setOrientacoes}
               />
             </View>
           </View>
@@ -352,11 +444,33 @@ export default function CriarAcaoScreen() {
                   <UploadIconSVG />
                 </View>
                 <Text style={styles.uploadSub}>
-                  Para melhores resultados, as dimensões devem ser 1080 x 1920
-                  pixels no formato .PNG
+                  As dimensões devem ser 1080 x 1920 pixels no formato .PNG
                 </Text>
               </View>
             </View>
+          </TouchableOpacity>
+
+          {/* BOTÃO CRIAR AÇÃO (Validado) */}
+          <TouchableOpacity
+            style={[
+              styles.criarAcaoButton,
+              isFormValid
+                ? styles.criarAcaoButtonEnabled
+                : styles.criarAcaoButtonDisabled,
+            ]}
+            onPress={() => console.log("Ação Criada")}
+            disabled={!isFormValid}
+          >
+            <Text
+              style={[
+                styles.criarAcaoButtonText,
+                isFormValid
+                  ? styles.criarAcaoButtonTextEnabled
+                  : styles.criarAcaoButtonTextDisabled,
+              ]}
+            >
+              Criar Ação
+            </Text>
           </TouchableOpacity>
         </SafeAreaView>
       </ScrollView>
@@ -607,18 +721,42 @@ const styles = StyleSheet.create({
     bottom: 6,
   },
 
-  addGoalBtn: {
+  // ESTILOS DAS METAS
+  metaInputRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  addMetaBtn: {
+    width: 47,
+    height: 47,
+    backgroundColor: "#0083B1",
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  metasList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 12,
+  },
+  metaPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 7,
-    padding: 8,
-    borderRadius: 15,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    marginTop: 8,
-    marginLeft: 0,
-    overflow: "hidden",
+    backgroundColor: "rgba(0, 158, 213, 0.15)",
+    borderWidth: 1,
+    borderColor: "#0083B1",
+    paddingLeft: 14,
+    paddingRight: 8,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
-  addGoalText: { color: "#FFFFFF", fontSize: 12, fontWeight: "300" },
+  metaPillText: {
+    color: "#E8F1F2",
+    fontSize: 12,
+    fontWeight: "300",
+    marginRight: 8,
+  },
+  metaRemoveBtn: { padding: 2 },
 
   uploadMainContainer: {
     height: 186,
@@ -663,5 +801,30 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "300",
     textAlign: "center",
+  },
+
+  // BOTÃO CRIAR AÇÃO
+  criarAcaoButton: {
+    height: 55,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 40,
+  },
+  criarAcaoButtonDisabled: {
+    backgroundColor: "white",
+  },
+  criarAcaoButtonEnabled: {
+    backgroundColor: "#EEE82C",
+  },
+  criarAcaoButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  criarAcaoButtonTextDisabled: {
+    color: "#001A2380",
+  },
+  criarAcaoButtonTextEnabled: {
+    color: "#001A23",
   },
 });

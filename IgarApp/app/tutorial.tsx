@@ -70,7 +70,7 @@ export default function TutorialScreen() {
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
     } else {
       // Quando finalizar o tutorial, manda para o Login!
-      router.replace("/login");
+      router.replace("/login_fl");
     }
   };
 
