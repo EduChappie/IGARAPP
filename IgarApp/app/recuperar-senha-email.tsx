@@ -253,7 +253,7 @@ export default function RecuperarSenhaEmailScreen() {
                     isValidEmail && styles.primaryButtonActive, // Aplica a sombra quando ativado
                   ]}
                   disabled={!isValidEmail}
-                  onPress={() => router.push("/confirmar-codigo")}
+                  onPress={() => router.push("../confirmar-codigo")}
                 >
                   <View style={styles.buttonContentRow}>
                     <Text style={styles.primaryButtonText}>

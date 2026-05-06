@@ -263,7 +263,7 @@ export default function ConfirmarCodigoScreen() {
                         alignItems: "center",
                       },
                     ]}
-                    onPress={() => router.push("/login-email")}
+                    onPress={() => router.push("../login-email")}
                     activeOpacity={0.7}
                   >
                     <View
@@ -410,7 +410,7 @@ export default function ConfirmarCodigoScreen() {
                   disabled={!isComplete}
                   onPress={() => {
                     Keyboard.dismiss();
-                    router.push("/recuperar-senha");
+                    router.push("../recuperar-senha");
                   }}
                 >
                   <View style={styles.buttonContentRow}>

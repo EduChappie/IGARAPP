@@ -279,7 +279,7 @@ export default function SenhaRecuperadaScreen() {
                     isButtonActive && styles.primaryButtonActive,
                   ]}
                   disabled={!isButtonActive}
-                  onPress={() => router.push("/login-email")}
+                  onPress={() => router.push("../login-email")}
                 >
                   <View style={styles.buttonContentRow}>
                     <Animated.Text

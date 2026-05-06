@@ -90,7 +90,7 @@ export default function LoginEmailScreen() {
                   alignItems: "center",
                 },
               ]}
-              onPress={() => router.push("/login")} // <-- CORREÇÃO AQUI
+              onPress={() => router.push("../login")} // <-- CORREÇÃO AQUI
               activeOpacity={0.7}
             >
               <View
@@ -249,7 +249,7 @@ export default function LoginEmailScreen() {
               <View style={styles.footerLinksContainer}>
                 <TouchableOpacity
                   style={{ marginBottom: 24 }}
-                  onPress={() => router.push("/recuperar-senha-email")}
+                  onPress={() => router.push("../recuperar-senha-email")}
                 >
                   <Text style={styles.forgotPasswordText}>
                     Esqueceu sua senha?{" "}

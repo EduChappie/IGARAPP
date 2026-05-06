@@ -136,7 +136,7 @@ export default function HomeOngScreen() {
             <TouchableOpacity
               style={styles.adicionarButton}
               activeOpacity={0.8}
-              onPress={() => router.push("/criar-acao")}
+              onPress={() => router.push("../criar-acao")}
             >
               <PositiveIconYellowSVG />
             </TouchableOpacity>
@@ -175,7 +175,7 @@ export default function HomeOngScreen() {
           <TouchableOpacity
             style={styles.tabIcon}
             activeOpacity={0.7}
-            onPress={() => router.push("/perfil_pf")}
+            onPress={() => router.push("../perfil_pf")}
           >
             <UserIcon />
           </TouchableOpacity>
@@ -251,7 +251,7 @@ const ProjectCard = ({ data }: { data: any }) => {
       {/* CORPO DO CARD VERDE (CLICÁVEL) */}
       <TouchableOpacity
         activeOpacity={0.9}
-        onPress={() => router.push("/detalhes-evento")}
+        onPress={() => router.push("../detalhes-evento")}
         style={styles.cardBody}
       >
         {/* CARROSSEL DE IMAGENS */}

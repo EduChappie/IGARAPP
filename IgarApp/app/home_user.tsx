@@ -193,7 +193,7 @@ export default function HomeUserScreen() {
           <TouchableOpacity
             style={styles.tabIcon}
             activeOpacity={0.7}
-            onPress={() => router.push("/historico")}
+            onPress={() => router.push("../historico")}
           >
             <RefreshIcon />
           </TouchableOpacity>
@@ -263,7 +263,7 @@ const ProjectCard = ({ data }: { data: any }) => {
       {/* CORPO DO CARD VERDE (AGORA CLICÁVEL COM ROTA) */}
       <TouchableOpacity
         activeOpacity={0.9}
-        onPress={() => router.push("/detalhes-evento")}
+        onPress={() => router.push("../detalhes-evento")}
         style={styles.cardBody}
       >
         {/* CARROSSEL DE IMAGENS */}

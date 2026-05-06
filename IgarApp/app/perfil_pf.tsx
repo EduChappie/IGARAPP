@@ -111,7 +111,7 @@ export default function PerfilScreen() {
             {/* Botão de Editar Perfil sobre a capa */}
             <TouchableOpacity
               style={styles.editButtonOverlay}
-              onPress={() => router.push("/editperfil_pf")}
+              onPress={() => router.push("../editperfil_pf")}
             >
               <Ionicons
                 name="pencil"

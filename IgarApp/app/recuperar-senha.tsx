@@ -279,7 +279,7 @@ export default function RecuperarSenhaScreen() {
                     isButtonActive && styles.primaryButtonActive,
                   ]}
                   disabled={!isButtonActive}
-                  onPress={() => router.push("/senha-recuperada")}
+                  onPress={() => router.push("../senha-recuperada")}
                 >
                   <View style={styles.buttonContentRow}>
                     <Animated.Text
