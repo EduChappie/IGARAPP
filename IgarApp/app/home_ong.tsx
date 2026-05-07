@@ -131,7 +131,7 @@ export default function HomeOngScreen() {
               </View>
               <View>
                 <Text style={styles.greetingText}>Olá, Usuário</Text>
-                <Text style={styles.userNameText}>Pronto pra salvar a amazônia hoje?</Text>
+                <Text style={styles.userNameText}>Pronto para salvar a amazônia hoje?</Text>
               </View>
             </View>
 
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 24,
-    paddingTop: Platform.OS === "ios" ? 20 : 40,
+    paddingTop: Platform.OS === "ios" ? 20 : 50,
     marginBottom: 25,
     flexDirection: "row",
     alignItems: "center",
@@ -411,6 +411,7 @@ const styles = StyleSheet.create({
     fontWeight: "300",
     color: "rgba(232, 241, 242, 0.4)",
     lineHeight: 22,
+    maxWidth: 212,
   },
   adicionarButton: {
     width: 38,
@@ -474,7 +475,7 @@ const styles = StyleSheet.create({
   },
   cardBody: {
     width: "100%",
-    backgroundColor: "#6DA544",
+    backgroundColor: "#115161d9",
     borderRadius: 35,
     paddingBottom: 25,
     paddingTop: 7,

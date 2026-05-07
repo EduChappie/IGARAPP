@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import Svg, { Circle, G, Path, Rect } from "react-native-svg";
 
-export default function PerfilScreen() {
+export default function PerfilOngScreen() {
   const router = useRouter();
 
   // --- NAVEGAÇÃO DE TELAS (Push) ---
@@ -24,7 +24,7 @@ export default function PerfilScreen() {
     }, 50);
   };
 
-  const acoesParticipadas = [
+  const acoesIncentivadas = [
     {
       id: "1",
       titulo: "Igarapé do Mindú",
@@ -53,8 +53,8 @@ export default function PerfilScreen() {
           contentContainerStyle={{ paddingBottom: 150 }}
         >
           <View style={styles.header}>
-                      <Text style={styles.headerTitle}>Perfil do Usuário</Text>
-                    </View>
+            <Text style={styles.headerTitle}>Perfil da ONG</Text>
+          </View>
           
           {/* ÁREA DA CAPA E FOTO DE PERFIL */}
           <View style={styles.coverContainer}>
@@ -63,7 +63,7 @@ export default function PerfilScreen() {
               style={styles.coverImage}
               imageStyle={{ borderRadius: 20 }}
             >
-              {/* Botão de Compartilhar (Movido para dentro da capa, no topo-direito) */}
+              {/* Botão de Compartilhar */}
               <View style={{ position: 'absolute', top: 12, right: 12 }}>
                 <TopGlassButton
                   onPress={() => console.log("Compartilhar clicado!")}
@@ -82,7 +82,7 @@ export default function PerfilScreen() {
               <TouchableOpacity
                 style={styles.editButtonOverlay}
                 activeOpacity={0.7}
-                onPress={() => handleNav("../editperfil_pf")}
+                onPress={() => handleNav("/editarperfil_ong")}
               >
                 <Ionicons
                   name="pencil"
@@ -105,19 +105,18 @@ export default function PerfilScreen() {
 
           {/* INFORMAÇÕES DO PERFIL */}
           <View style={styles.infoContainer}>
-            {/* Tag de Especialista */}
-            <View style={styles.tagContainer}>
-              <Ionicons name="ribbon" size={14} color="#012A36" />
-              <Text style={styles.tagText}>IgarApp Expert</Text>
+            <Text style={styles.accountType}>Conta ONG</Text>
+            <Text style={styles.profileName}>Instituto Salve os Igarapés</Text>
+
+            {/* Endereço Adicionado */}
+            <View style={styles.locationRow}>
+              <Ionicons name="location-outline" size={16} color="#A6FF00" style={{ marginRight: 6 }} />
+              <Text style={styles.locationText}>Av. Djalma Batista, 1234 - Manaus, AM</Text>
             </View>
 
-            <Text style={styles.accountType}>Conta Voluntário</Text>
-            <Text style={styles.profileName}>Nome do Usuário</Text>
-
             <Text style={styles.bioText}>
-              Apaixonado pela preservação da Amazônia. Trabalhando todos os dias
-              para garantir que nossos igarapés voltem a ser fontes de vida e
-              orgulho para Manaus.
+              Organização não governamental dedicada à revitalização e conservação 
+              dos igarapés de Manaus através da mobilização de voluntários e educação ambiental.
             </Text>
 
             {/* Link do Instagram */}
@@ -128,20 +127,20 @@ export default function PerfilScreen() {
                 color="#A6FF00"
                 style={{ marginRight: 8 }}
               />
-              <Text style={styles.instagramText}>@usuario_igarapp</Text>
+              <Text style={styles.instagramText}>@salveosigarapes</Text>
             </TouchableOpacity>
           </View>
 
           {/* CARROSSEL DE AÇÕES */}
           <View style={styles.actionsContainer}>
-            <Text style={styles.sectionTitle}>Ações que participou</Text>
+            <Text style={styles.sectionTitle}>Ações incentivadas</Text>
 
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingLeft: 24, paddingRight: 8 }}
             >
-              {acoesParticipadas.map((acao) => (
+              {acoesIncentivadas.map((acao) => (
                 <TouchableOpacity
                   key={acao.id}
                   style={styles.actionCard}
@@ -178,7 +177,7 @@ export default function PerfilScreen() {
 }
 
 // ==========================================
-// COMPONENTES AUXILIARES E ÍCONES SVG
+// COMPONENTE AUXILIAR
 // ==========================================
 
 const TopGlassButton = ({
@@ -228,12 +227,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "600",
     color: "#E8F1F2",
-  
   },
   container: { flex: 1 },
   coverContainer: {
     paddingHorizontal: 24,
-    marginTop: Platform.OS === "ios" ? 50 : 25, // <-- Adicionamos a margem do topo aqui!
+    marginTop: Platform.OS === "ios" ? 50 : 25,
     marginBottom: 40,
     width: "100%",
     alignItems: "center",
@@ -277,22 +275,6 @@ const styles = StyleSheet.create({
   },
   profileImage: { width: "100%", height: "100%", borderRadius: 40 },
   infoContainer: { paddingHorizontal: 24, marginBottom: 30 },
-  tagContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#A6FF00",
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  tagText: {
-    color: "#012A36",
-    fontSize: 12,
-    fontWeight: "bold",
-    marginLeft: 4,
-  },
   accountType: {
     color: "rgba(255,255,255,0.5)",
     fontSize: 12,
@@ -302,7 +284,16 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontSize: 24,
     fontWeight: "bold",
+    marginBottom: 8,
+  },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 16,
+  },
+  locationText: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 14,
   },
   bioText: {
     color: "rgba(255,255,255,0.7)",

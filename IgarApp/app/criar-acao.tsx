@@ -1,4 +1,3 @@
-import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -13,18 +12,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Svg, {
-  Defs,
-  G,
-  Path,
-  RadialGradient,
-  Rect,
-  Stop,
-} from "react-native-svg";
+import Svg, { G, Path, Rect } from "react-native-svg";
+import { Ionicons } from "@expo/vector-icons";
 
 const { width } = Dimensions.get("window");
 
-// Nomes dos meses para exibir no calendário
 const NOME_MESES = [
   "Janeiro",
   "Fevereiro",
@@ -43,40 +35,45 @@ const NOME_MESES = [
 export default function CriarAcaoScreen() {
   const router = useRouter();
 
+  // Estados dos inputs
+  const [titulo, setTitulo] = useState("");
+  const [cidade, setCidade] = useState("");
+  const [estado, setEstado] = useState("");
+  const [horaInicio, setHoraInicio] = useState("");
+  const [horaFim, setHoraFim] = useState("");
+  const [voluntarios, setVoluntarios] = useState("");
+  const [descricao, setDescricao] = useState("");
+
+  // --- LÓGICA DAS METAS E ORIENTAÇÕES ---
+  const [metas, setMetas] = useState<string[]>([]);
+  const [metaInput, setMetaInput] = useState("");
+
+  const adicionarMeta = () => {
+    if (metaInput.trim() !== "") {
+      setMetas([...metas, metaInput.trim()]);
+      setMetaInput("");
+    }
+  };
+
+  const removerMeta = (index: number) => {
+    const novasMetas = [...metas];
+    novasMetas.splice(index, 1);
+    setMetas(novasMetas);
+  };
+
   // --- LÓGICA DINÂMICA DO CALENDÁRIO ---
-
-  // Data real de hoje (para validar o círculo azul com pontinho)
   const dataDeHoje = new Date();
-  const diaReal = dataDeHoje.getDate();
-  const mesReal = dataDeHoje.getMonth();
-  const anoReal = dataDeHoje.getFullYear();
-
-  // Estado para controlar qual mês estamos visualizando no calendário
   const [currentDate, setCurrentDate] = useState(new Date());
   const anoVisualizado = currentDate.getFullYear();
   const mesVisualizado = currentDate.getMonth();
 
-  // Estado para o dia selecionado (amarelo). Inicia no dia de hoje.
-  const [selectedDay, setSelectedDay] = useState(diaReal);
+  const [selectedDay, setSelectedDay] = useState(dataDeHoje.getDate());
 
-  // Calcula quantos dias tem o mês visualizado
   const diasNoMes = new Date(anoVisualizado, mesVisualizado + 1, 0).getDate();
   const arrayDias = Array.from({ length: diasNoMes }, (_, i) => i + 1);
-
-  // Calcula em qual dia da semana (0=Dom, 1=Seg...) o mês começa para colocar os espaços vazios
   const primeiroDiaDoMes = new Date(anoVisualizado, mesVisualizado, 1).getDay();
-  // Como nosso calendário começa na Segunda (Seg), precisamos ajustar o index (Dom vira 6, Seg vira 0)
   const offset = primeiroDiaDoMes === 0 ? 6 : primeiroDiaDoMes - 1;
   const espacosVazios = Array.from({ length: offset }, (_, i) => i);
-
-  // Funções para as setinhas do calendário
-  const irParaMesAnterior = () => {
-    setCurrentDate(new Date(anoVisualizado, mesVisualizado - 1, 1));
-  };
-
-  const irParaProximoMes = () => {
-    setCurrentDate(new Date(anoVisualizado, mesVisualizado + 1, 1));
-  };
 
   return (
     <View style={styles.mainContainer}>
@@ -86,18 +83,12 @@ export default function CriarAcaoScreen() {
         translucent
       />
 
-      {/* FUNDO COM GRADIENTE RADIAL */}
-      <View style={StyleSheet.absoluteFillObject}>
-        <Svg height="100%" width="100%">
-          <Defs>
-            <RadialGradient id="grad" cx="50%" cy="0%" r="70%" fx="50%" fy="0%">
-              <Stop offset="0" stopColor="#00374A" stopOpacity="1" />
-              <Stop offset="1" stopColor="#001A23" stopOpacity="1" />
-            </RadialGradient>
-          </Defs>
-          <Rect x="0" y="0" width="100%" height="100%" fill="url(#grad)" />
-        </Svg>
-      </View>
+      {/* FUNDO COM GRADIENTE LINEAR */}
+      <LinearGradient
+        colors={["#044A60", "#012A36", "#012A36"]}
+        locations={[0, 0.4, 1]}
+        style={StyleSheet.absoluteFillObject}
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -111,16 +102,18 @@ export default function CriarAcaoScreen() {
           </View>
 
           <Text style={styles.descriptionHeader}>
-            Crypto ipsum bitcoin ethereum dogecoin litecoin. Polkadot kava
-            compound polygon cosmos solana ICON flow ren.
+            Preencha os dados abaixo para criar uma nova ação voluntária e
+            engajar a comunidade.
           </Text>
 
-          {/* FORMULÁRIO PARTE 1 */}
+          {/* INFORMAÇÕES BÁSICAS */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nome do local</Text>
+            <Text style={styles.label}>Título da ação</Text>
             <View style={styles.inputContainer}>
               <TextInput
-                placeholder="Coloque o nome da Localização"
+                value={titulo}
+                onChangeText={setTitulo}
+                placeholder="Ex: Limpeza do Igarapé"
                 placeholderTextColor="#FFFFFFB2"
                 style={styles.textInput}
               />
@@ -132,6 +125,8 @@ export default function CriarAcaoScreen() {
               <Text style={styles.label}>Cidade</Text>
               <View style={styles.inputContainer}>
                 <TextInput
+                  value={cidade}
+                  onChangeText={setCidade}
                   placeholder="Selecionar Cidade"
                   placeholderTextColor="#FFFFFFB2"
                   style={styles.textInput}
@@ -142,6 +137,8 @@ export default function CriarAcaoScreen() {
               <Text style={styles.label}>Estado</Text>
               <View style={styles.inputContainer}>
                 <TextInput
+                  value={estado}
+                  onChangeText={setEstado}
                   placeholder="Selecionar Estado"
                   placeholderTextColor="#FFFFFFB2"
                   style={styles.textInput}
@@ -155,6 +152,8 @@ export default function CriarAcaoScreen() {
             <View style={styles.timeRow}>
               <View style={[styles.inputContainer, { flex: 1 }]}>
                 <TextInput
+                  value={horaInicio}
+                  onChangeText={setHoraInicio}
                   placeholder="XX:XX"
                   placeholderTextColor="#FFFFFFB2"
                   style={styles.textInput}
@@ -163,6 +162,8 @@ export default function CriarAcaoScreen() {
               <View style={styles.timeDash} />
               <View style={[styles.inputContainer, { flex: 1 }]}>
                 <TextInput
+                  value={horaFim}
+                  onChangeText={setHoraFim}
                   placeholder="XX:XX"
                   placeholderTextColor="#FFFFFFB2"
                   style={styles.textInput}
@@ -171,7 +172,7 @@ export default function CriarAcaoScreen() {
             </View>
           </View>
 
-          {/* CARD DE DATA SELECIONADA (AZUL 3D) */}
+          {/* CARD DE DATA */}
           <View style={styles.dateDisplayCard}>
             <LinearGradient
               colors={["#0083B1", "#05506B"]}
@@ -197,29 +198,33 @@ export default function CriarAcaoScreen() {
             </LinearGradient>
           </View>
 
-          {/* CALENDÁRIO DINÂMICO */}
+          {/* CALENDÁRIO DINÂMICO CONSERTADO */}
           <View style={styles.calendarContainer}>
-            {/* Setas e Mês Atual */}
             <View style={styles.calendarHeader}>
               <TouchableOpacity
-                onPress={irParaMesAnterior}
+                onPress={() =>
+                  setCurrentDate(
+                    new Date(anoVisualizado, mesVisualizado - 1, 1),
+                  )
+                }
                 style={{ padding: 10 }}
               >
                 <SetaBack />
               </TouchableOpacity>
-
               <Text style={styles.calendarMonthYear}>
                 {NOME_MESES[mesVisualizado]} {anoVisualizado}
               </Text>
-
               <TouchableOpacity
-                onPress={irParaProximoMes}
+                onPress={() =>
+                  setCurrentDate(
+                    new Date(anoVisualizado, mesVisualizado + 1, 1),
+                  )
+                }
                 style={{ padding: 10 }}
               >
                 <SetaFront />
               </TouchableOpacity>
             </View>
-
             <View style={styles.weekDaysRow}>
               {["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"].map((d) => (
                 <Text key={d} style={styles.weekDayText}>
@@ -227,22 +232,12 @@ export default function CriarAcaoScreen() {
                 </Text>
               ))}
             </View>
-
             <View style={styles.daysGrid}>
-              {/* Espaços vazios do início do mês */}
               {espacosVazios.map((_, i) => (
                 <View key={`empty-${i}`} style={styles.dayCellContainer} />
               ))}
-
-              {/* Dias do mês */}
               {arrayDias.map((dia) => {
                 const isSelected = selectedDay === dia;
-                // Validação REAL de hoje: tem que ser o mesmo dia, mesmo mês e mesmo ano!
-                const isToday =
-                  dia === diaReal &&
-                  mesVisualizado === mesReal &&
-                  anoVisualizado === anoReal;
-
                 return (
                   <View key={dia} style={styles.dayCellContainer}>
                     <TouchableOpacity
@@ -250,27 +245,16 @@ export default function CriarAcaoScreen() {
                       style={[
                         styles.dayCircle,
                         isSelected && styles.daySelected,
-                        isToday && !isSelected && styles.dayToday, // Azul só se for hoje e NÃO estiver selecionado
                       ]}
                     >
                       <Text
                         style={[
                           styles.dayText,
-                          isSelected && { color: "#001A23", fontWeight: "500" },
+                          isSelected && { color: "#001A23", fontWeight: "600" },
                         ]}
                       >
                         {dia}
                       </Text>
-
-                      {/* PONTINHO DO DIA DE HOJE */}
-                      {isToday && (
-                        <View
-                          style={[
-                            styles.todayDot,
-                            isSelected && { backgroundColor: "#001A23" },
-                          ]}
-                        />
-                      )}
                     </TouchableOpacity>
                   </View>
                 );
@@ -278,59 +262,83 @@ export default function CriarAcaoScreen() {
             </View>
           </View>
 
-          {/* FORMULÁRIO PARTE 2 */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Quantidade de voluntários</Text>
-            <View style={styles.inputContainer}>
-              <TextInput
-                placeholder="Selecione a quantidade de voluntários"
-                placeholderTextColor="#FFFFFFB2"
-                style={styles.textInput}
-              />
-            </View>
-          </View>
-
+          {/* DESCRIÇÃO DO EVENTO */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Descrição do evento</Text>
             <View
               style={[
                 styles.inputContainer,
-                { height: 80, alignItems: "flex-start" },
+                { height: 90, alignItems: "flex-start", paddingTop: 12 },
               ]}
             >
-              <TouchableOpacity style={styles.addGoalBtn}>
-                <BlurView
-                  intensity={10}
-                  style={StyleSheet.absoluteFillObject}
+              <TextInput
+                value={descricao}
+                onChangeText={setDescricao}
+                style={[styles.textInput, { textAlignVertical: "top" }]}
+                multiline
+                placeholder="Detalhes completos sobre a ação..."
+                placeholderTextColor="#FFFFFFB2"
+              />
+            </View>
+          </View>
+
+          {/* ESTIMATIVA DE VOLUNTÁRIOS */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Estimativa de voluntários</Text>
+            <View style={styles.inputContainer}>
+              <TextInput
+                value={voluntarios}
+                onChangeText={setVoluntarios}
+                placeholder="Qtd. de voluntários"
+                placeholderTextColor="#FFFFFFB2"
+                style={styles.textInput}
+                keyboardType="numeric"
+              />
+            </View>
+          </View>
+
+          {/* METAS E ORIENTAÇÕES */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Metas e Orientações</Text>
+
+            <View style={styles.metaInputRow}>
+              <View style={[styles.inputContainer, { flex: 1 }]}>
+                <TextInput
+                  placeholder="Ex: Levar saco de lixo grande..."
+                  placeholderTextColor="#FFFFFFB2"
+                  value={metaInput}
+                  onChangeText={setMetaInput}
+                  style={styles.textInput}
+                  onSubmitEditing={adicionarMeta}
                 />
+              </View>
+              <TouchableOpacity
+                onPress={adicionarMeta}
+                style={styles.addMetaBtn}
+              >
                 <PlusIcon />
-                <Text style={styles.addGoalText}>Adicionar meta</Text>
               </TouchableOpacity>
             </View>
-          </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Metas do evento</Text>
-            <View style={[styles.inputContainer, { height: 86 }]}>
-              <TextInput
-                placeholder="Escreva a descrição do evento com o máximo de detalhes..."
-                placeholderTextColor="#FFFFFFB2"
-                multiline
-                style={styles.textInput}
-              />
-            </View>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Orientações para os voluntários</Text>
-            <View style={[styles.inputContainer, { height: 86 }]}>
-              <TextInput
-                placeholder="Escreva as orientações do evento..."
-                placeholderTextColor="#FFFFFFB2"
-                multiline
-                style={styles.textInput}
-              />
-            </View>
+            {metas.length > 0 && (
+              <View style={styles.metasList}>
+                {metas.map((meta, index) => (
+                  <View key={index} style={styles.metaPill}>
+                    <Text style={styles.metaPillText}>{meta}</Text>
+                    <TouchableOpacity
+                      onPress={() => removerMeta(index)}
+                      style={styles.metaRemoveBtn}
+                    >
+                      <Ionicons
+                        name="close-circle"
+                        size={16}
+                        color="rgba(255,255,255,0.5)"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
 
           {/* GALERIA DE UPLOAD */}
@@ -357,6 +365,14 @@ export default function CriarAcaoScreen() {
                 </Text>
               </View>
             </View>
+          </TouchableOpacity>
+
+          {/* BOTÃO CRIAR AÇÃO */}
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.saveButtonText}>Criar Ação</Text>
           </TouchableOpacity>
         </SafeAreaView>
       </ScrollView>
@@ -575,7 +591,6 @@ const styles = StyleSheet.create({
     width: 44,
     textAlign: "center",
   },
-
   daysGrid: { flexDirection: "row", flexWrap: "wrap" },
   dayCellContainer: {
     width: (width - 48) / 7,
@@ -592,33 +607,39 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   dayText: { color: "#E8F1F2", fontSize: 16, fontWeight: "300" },
-  daySelected: { backgroundColor: "#EEE82C" },
-  dayToday: {
-    borderWidth: 1.5,
-    borderColor: "#009ED5",
-    backgroundColor: "rgba(0, 158, 213, 0.2)",
-  },
-  todayDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#FFFFFF",
-    position: "absolute",
-    bottom: 6,
-  },
+  daySelected: { backgroundColor: "#EEE82C" }, // BOLINHA VERDE ÚNICA
 
-  addGoalBtn: {
+  // ESTILOS DAS METAS E ORIENTAÇÕES
+  metaInputRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  addMetaBtn: {
+    width: 47,
+    height: 47,
+    backgroundColor: "#0083B1",
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  metasList: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 },
+  metaPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 7,
-    padding: 8,
-    borderRadius: 15,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    marginTop: 8,
-    marginLeft: 0,
-    overflow: "hidden",
+    backgroundColor: "rgba(145, 203, 62, 0.15)",
+    borderWidth: 1,
+    borderColor: "#91CB3E",
+    paddingLeft: 14,
+    paddingRight: 8,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
-  addGoalText: { color: "#FFFFFF", fontSize: 12, fontWeight: "300" },
+  metaPillText: {
+    color: "#E8F1F2",
+    fontSize: 12,
+    fontWeight: "300",
+    marginRight: 8,
+  },
+  metaRemoveBtn: { padding: 2 },
 
   uploadMainContainer: {
     height: 186,
@@ -664,4 +685,15 @@ const styles = StyleSheet.create({
     fontWeight: "300",
     textAlign: "center",
   },
+
+  // BOTÃO SALVAR / CRIAR AÇÃO
+  saveButton: {
+    backgroundColor: "#EEE82C",
+    height: 55,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 40,
+  },
+  saveButtonText: { color: "#001A23", fontSize: 16, fontWeight: "bold" },
 });
