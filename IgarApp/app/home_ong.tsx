@@ -1,3 +1,5 @@
+import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
@@ -5,6 +7,8 @@ import {
   Dimensions,
   FlatList,
   Image,
+  KeyboardAvoidingView,
+  Modal,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -15,12 +19,25 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Svg, { Path, G, Defs, RadialGradient, Stop } from "react-native-svg";
+import Svg, {
+  Defs,
+  FeBlend,
+  FeColorMatrix,
+  FeComposite,
+  FeFlood,
+  FeOffset,
+  Filter,
+  G,
+  Path,
+  RadialGradient,
+  Rect,
+  Stop,
+} from "react-native-svg";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 // ==========================================
-// DADOS DOS 6 CARDS
+// DADOS DOS CARDS
 // ==========================================
 const FEED_DATA = [
   {
@@ -36,6 +53,11 @@ const FEED_DATA = [
       require("../src/assets/image_card_1.png"),
       require("../src/assets/image_card_1.png"),
     ],
+    metas: [
+      "Encher 30 sacos de lixo",
+      "Separar lixo reciclável",
+      "Limpar margem esquerda",
+    ],
   },
   {
     id: "2",
@@ -49,6 +71,7 @@ const FEED_DATA = [
       require("../src/assets/image_card_1.png"),
       require("../src/assets/image_card_1.png"),
     ],
+    metas: ["Retirar plásticos da areia", "Orientar banhistas"],
   },
   {
     id: "3",
@@ -63,6 +86,7 @@ const FEED_DATA = [
       require("../src/assets/image_card_1.png"),
       require("../src/assets/image_card_1.png"),
     ],
+    metas: ["Plantar 50 mudas", "Adubar solo"],
   },
   {
     id: "4",
@@ -76,6 +100,7 @@ const FEED_DATA = [
       require("../src/assets/image_card_1.png"),
       require("../src/assets/image_card_1.png"),
     ],
+    metas: ["Separar recicláveis", "Orientar comerciantes"],
   },
   {
     id: "5",
@@ -90,6 +115,7 @@ const FEED_DATA = [
       require("../src/assets/image_card_1.png"),
       require("../src/assets/image_card_1.png"),
     ],
+    metas: ["Limpar trilhas", "Pintar bancos"],
   },
   {
     id: "6",
@@ -103,11 +129,52 @@ const FEED_DATA = [
       require("../src/assets/image_card_1.png"),
       require("../src/assets/image_card_1.png"),
     ],
+    metas: ["Distribuir material", "Palestrar para crianças"],
   },
 ];
 
-export default function HomeOngScreen() {
+const VOLUNTARIOS_MOCK = [
+  { id: "v1", nome: "Ana Silva", status: "Presente" },
+  { id: "v2", nome: "Carlos Souza", status: "Presente" },
+  { id: "v3", nome: "Beatriz Lima", status: "Ausente" },
+  { id: "v4", nome: "Daniel Oliveira", status: "Presente" },
+  { id: "v5", nome: "Eduardo Costa", status: "Presente" },
+];
+
+export default function HomeUserScreen() {
   const router = useRouter();
+
+  // ── Estado do modal (vindo do código do Raul) ──
+  const [modalVisible, setModalVisible] = useState(false);
+  const [acaoSelecionada, setAcaoSelecionada] = useState<any>(null);
+  const [lixoRecolhido, setLixoRecolhido] = useState("");
+  const [metasConcluidas, setMetasConcluidas] = useState<number[]>([]);
+  const [buscaVoluntario, setBuscaVoluntario] = useState("");
+
+  const abrirModalFinalizar = (acao: any) => {
+    setAcaoSelecionada(acao);
+    setLixoRecolhido("");
+    setMetasConcluidas([]);
+    setBuscaVoluntario("");
+    setModalVisible(true);
+  };
+
+  const fecharModal = () => {
+    setModalVisible(false);
+    setTimeout(() => setAcaoSelecionada(null), 300);
+  };
+
+  const toggleMeta = (index: number) => {
+    if (metasConcluidas.includes(index)) {
+      setMetasConcluidas(metasConcluidas.filter((i) => i !== index));
+    } else {
+      setMetasConcluidas([...metasConcluidas, index]);
+    }
+  };
+
+  const voluntariadosFiltrados = VOLUNTARIOS_MOCK.filter((v) =>
+    v.nome.toLowerCase().includes(buscaVoluntario.toLowerCase()),
+  );
 
   return (
     <LinearGradient
@@ -123,7 +190,7 @@ export default function HomeOngScreen() {
         contentContainerStyle={{ paddingBottom: 120 }}
       >
         <SafeAreaView>
-          {/* HEADER (BOM DIA, LOGO OFICIAL E BOTAO ADICIONAR) */}
+          {/* HEADER */}
           <View style={styles.header}>
             <View style={styles.headerTextRow}>
               <View style={styles.headerLogoContainer}>
@@ -135,7 +202,6 @@ export default function HomeOngScreen() {
               </View>
             </View>
 
-            {/* BOTAO ADICIONAR AÇÃO (+) */}
             <TouchableOpacity
               style={styles.adicionarButton}
               activeOpacity={0.8}
@@ -158,11 +224,210 @@ export default function HomeOngScreen() {
           {/* LISTA DE CARDS (FEED) */}
           <View style={styles.feedContainer}>
             {FEED_DATA.map((item) => (
-              <ProjectCard key={item.id} data={item} />
+              <ProjectCard
+                key={item.id}
+                data={item}
+                onPressCard={() => abrirModalFinalizar(item)}
+              />
             ))}
           </View>
         </SafeAreaView>
       </ScrollView>
+
+      {/* ── MODAL (do Raul) ── */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={fecharModal}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.modalOverlay}
+        >
+          <BlurView
+            intensity={80}
+            tint="dark"
+            style={StyleSheet.absoluteFillObject}
+          />
+
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <CloseGlassButton onPress={fecharModal} />
+              <Text style={styles.modalTitle}>Finalizar Ação</Text>
+              <View style={{ width: 44 }} />
+            </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 20 }}
+            >
+              <Text style={styles.modalSubTitle}>{acaoSelecionada?.title}</Text>
+              <Text style={styles.modalInfoText}>
+                {acaoSelecionada
+                  ? acaoSelecionada.date + " • " + acaoSelecionada.time
+                  : ""}
+              </Text>
+
+              {/* Quantidade de Lixo */}
+              <View style={styles.modalSection}>
+                <Text style={styles.modalSectionTitle}>
+                  Quantidade de Lixo Recolhido
+                </Text>
+                <View style={styles.modalInputContainer}>
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="Ex: 300kg ou 40 sacos..."
+                    placeholderTextColor="rgba(255,255,255,0.4)"
+                    value={lixoRecolhido}
+                    onChangeText={setLixoRecolhido}
+                    keyboardType="default"
+                  />
+                  <Ionicons
+                    name="trash-outline"
+                    size={20}
+                    color="rgba(255,255,255,0.5)"
+                    style={{ marginRight: 15 }}
+                  />
+                </View>
+              </View>
+
+              {/* Checklist de Metas */}
+              <View style={styles.modalSection}>
+                <Text style={styles.modalSectionTitle}>Checklist de Metas</Text>
+                {(acaoSelecionada?.metas || []).map(
+                  (meta: string, index: number) => {
+                    const isChecked = metasConcluidas.includes(index);
+                    return (
+                      <TouchableOpacity
+                        key={index.toString()}
+                        style={[
+                          styles.checkboxRow,
+                          isChecked ? styles.checkboxRowActive : null,
+                        ]}
+                        onPress={() => toggleMeta(index)}
+                        activeOpacity={0.7}
+                      >
+                        <View
+                          style={[
+                            styles.checkbox,
+                            isChecked ? styles.checkboxActive : null,
+                          ]}
+                        >
+                          {isChecked ? (
+                            <Ionicons
+                              name="checkmark"
+                              size={14}
+                              color="#001A23"
+                            />
+                          ) : null}
+                        </View>
+                        <Text
+                          style={[
+                            styles.checkboxText,
+                            isChecked ? styles.checkboxTextActive : null,
+                          ]}
+                        >
+                          {meta}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  },
+                )}
+              </View>
+
+              {/* Fotos */}
+              <View style={styles.modalSection}>
+                <Text style={styles.modalSectionTitle}>
+                  Fotos da Ação Finalizada
+                </Text>
+                <TouchableOpacity
+                  style={styles.uploadMainContainer}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.uploadDashedArea}>
+                    <LinearGradient
+                      colors={["#004E69", "#003446"]}
+                      style={StyleSheet.absoluteFillObject}
+                    />
+                    <View style={styles.uploadContent}>
+                      <Text style={styles.uploadTitle}>
+                        Adicionar fotos do evento
+                      </Text>
+                      <View style={styles.uploadIconCircle}>
+                        <UploadIconSVG />
+                      </View>
+                      <Text style={styles.uploadSub}>
+                        Toque para fazer upload das imagens da ação finalizada
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+              {/* Lista de Presença */}
+              <View style={styles.modalSection}>
+                <Text style={styles.modalSectionTitle}>Lista de Presença</Text>
+                <View style={styles.modalSearchContainer}>
+                  <Ionicons
+                    name="search"
+                    size={18}
+                    color="rgba(255,255,255,0.5)"
+                  />
+                  <TextInput
+                    style={styles.modalSearchInput}
+                    placeholder="Buscar voluntário..."
+                    placeholderTextColor="rgba(255,255,255,0.4)"
+                    value={buscaVoluntario}
+                    onChangeText={setBuscaVoluntario}
+                  />
+                </View>
+                <View style={styles.voluntariosList}>
+                  {voluntariadosFiltrados.map((voluntario) => (
+                    <View key={voluntario.id} style={styles.voluntarioRow}>
+                      <View style={styles.voluntarioInfo}>
+                        <View style={styles.voluntarioAvatar}>
+                          <Text style={styles.voluntarioAvatarText}>
+                            {voluntario.nome.charAt(0)}
+                          </Text>
+                        </View>
+                        <Text style={styles.voluntarioNome}>
+                          {voluntario.nome}
+                        </Text>
+                      </View>
+                      <TouchableOpacity style={styles.presencaBtn}>
+                        <Text style={styles.presencaBtnText}>
+                          {voluntario.status}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.modalButtonVoltar}
+                onPress={fecharModal}
+              >
+                <Text style={styles.modalButtonVoltarText}>Voltar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalButtonFinalizar}
+                onPress={() => {
+                  fecharModal();
+                }}
+              >
+                <Text style={styles.modalButtonFinalizarText}>
+                  Finalizar Ação
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -170,8 +435,13 @@ export default function HomeOngScreen() {
 // ==========================================
 // COMPONENTE DO CARD COM CARROSSEL ANIMADO
 // ==========================================
-const ProjectCard = ({ data }: { data: any }) => {
-  const router = useRouter();
+const ProjectCard = ({
+  data,
+  onPressCard,
+}: {
+  data: any;
+  onPressCard: () => void;
+}) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const activeIndexRef = useRef(0);
@@ -182,12 +452,7 @@ const ProjectCard = ({ data }: { data: any }) => {
       if (nextIndex >= data.images.length) {
         nextIndex = 0;
       }
-
-      flatListRef.current?.scrollToIndex({
-        index: nextIndex,
-        animated: true,
-      });
-
+      flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
       activeIndexRef.current = nextIndex;
       setActiveIndex(nextIndex);
     }, 3500);
@@ -197,11 +462,10 @@ const ProjectCard = ({ data }: { data: any }) => {
 
   const handleScroll = (event: any) => {
     const slideSize = event.nativeEvent.layoutMeasurement.width;
-    const index = event.nativeEvent.contentOffset.x / slideSize;
-    const roundIndex = Math.round(index);
-    if (roundIndex !== activeIndexRef.current) {
-      activeIndexRef.current = roundIndex;
-      setActiveIndex(roundIndex);
+    const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
+    if (index !== activeIndexRef.current) {
+      activeIndexRef.current = index;
+      setActiveIndex(index);
     }
   };
 
@@ -222,10 +486,10 @@ const ProjectCard = ({ data }: { data: any }) => {
         </View>
       </View>
 
-      {/* CORPO DO CARD VERDE (CLICÁVEL) */}
+      {/* CORPO DO CARD (CLICÁVEL → abre modal) */}
       <TouchableOpacity
         activeOpacity={0.9}
-        onPress={() => router.push("../detalhes-evento")}
+        onPress={onPressCard}
         style={styles.cardBody}
       >
         {/* CARROSSEL DE IMAGENS */}
@@ -247,7 +511,7 @@ const ProjectCard = ({ data }: { data: any }) => {
           />
         </View>
 
-        {/* TRACINHOS (PAGINAÇÃO) */}
+        {/* PAGINAÇÃO */}
         <View style={styles.pagination}>
           {data.images.map((_: any, i: number) => (
             <View
@@ -286,6 +550,107 @@ const ProjectCard = ({ data }: { data: any }) => {
 // ==========================================
 // ÍCONES SVG INLINE
 // ==========================================
+
+const UploadIconSVG = () => (
+  <Svg width="23" height="23" viewBox="0 0 23 23" fill="none">
+    <Path
+      d="M12.98 0.81C12.73 0.55 12.42 0.34 12.09 0.21C11.75 0.07 11.39 0 11.03 0C10.66 0 10.3 0.07 9.97 0.21C9.63 0.34 9.33 0.55 9.07 0.81L6.11 3.77C5.95 3.94 5.87 4.17 5.87 4.41C5.88 4.64 5.97 4.87 6.14 5.04C6.31 5.2 6.54 5.3 6.77 5.31C7.01 5.31 7.24 5.23 7.41 5.07L10.11 2.37L10.1 16.59C10.1 16.84 10.2 17.07 10.37 17.24C10.55 17.42 10.78 17.51 11.03 17.51C11.27 17.51 11.51 17.42 11.68 17.24C11.85 17.07 11.95 16.84 11.95 16.59L11.96 2.39L14.64 5.07C14.81 5.24 15.05 5.34 15.29 5.34C15.54 5.34 15.77 5.24 15.94 5.07C16.12 4.89 16.21 4.66 16.21 4.41C16.21 4.17 16.12 3.94 15.94 3.76L12.98 0.81Z"
+      fill="#E8F1F2"
+    />
+    <Path
+      d="M21.2 14.75C20.96 14.75 20.72 14.84 20.55 15.02C20.38 15.19 20.28 15.42 20.28 15.67V19.36C20.28 19.6 20.18 19.84 20.01 20.01C19.84 20.18 19.6 20.28 19.36 20.28H2.76C2.52 20.28 2.28 20.18 2.11 20.01C1.94 19.84 1.84 19.6 1.84 19.36V15.67C1.84 15.42 1.74 15.19 1.57 15.02C1.4 14.84 1.16 14.75 0.92 14.75C0.67 14.75 0.44 14.84 0.27 15.02C0.09 15.19 0 15.42 0 15.67V19.36C0 20.09 0.29 20.79 0.81 21.31C1.32 21.83 2.03 22.12 2.76 22.12H19.36C20.09 22.12 20.79 21.83 21.31 21.31C21.83 20.79 22.12 20.09 22.12 19.36V15.67C22.12 15.42 22.03 15.19 21.85 15.02C21.68 14.84 21.45 14.75 21.2 14.75Z"
+      fill="#E8F1F2"
+    />
+  </Svg>
+);
+
+const CloseGlassButton = ({ onPress }: { onPress: () => void }) => (
+  <TouchableOpacity
+    style={{
+      width: 44,
+      height: 44,
+      borderRadius: 15,
+      overflow: "hidden",
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+    onPress={onPress}
+    activeOpacity={0.7}
+  >
+    <View
+      style={{
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: "rgba(0, 44, 59, 0.4)",
+      }}
+    />
+    <Svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+      <Rect
+        x="0.35"
+        y="0.35"
+        width="43.3"
+        height="43.3"
+        rx="14.65"
+        stroke="white"
+        strokeOpacity="0.15"
+        strokeWidth="0.7"
+      />
+      <G filter="url(#filter1_close_btn)">
+        <Rect x="2.5" y="2.5" width="39" height="39" rx="15" fill="#EEE82C" />
+        <Rect
+          x="3"
+          y="3"
+          width="38"
+          height="38"
+          rx="14.5"
+          stroke="#001A23"
+          strokeOpacity="0.4"
+        />
+        <Path
+          d="M16 28L28 16M16 16L28 28"
+          stroke="#001A23"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </G>
+      <Defs>
+        <Filter
+          id="filter1_close_btn"
+          x="2.5"
+          y="2.5"
+          width="39"
+          height="39"
+          filterUnits="userSpaceOnUse"
+        >
+          <FeFlood floodOpacity="0" result="BackgroundImageFix" />
+          <FeBlend
+            mode="normal"
+            in="SourceGraphic"
+            in2="BackgroundImageFix"
+            result="shape"
+          />
+          <FeColorMatrix
+            in="SourceAlpha"
+            type="matrix"
+            values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+            result="hardAlpha"
+          />
+          <FeOffset dy="-3" />
+          <FeComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
+          <FeColorMatrix
+            type="matrix"
+            values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"
+          />
+          <FeBlend
+            mode="normal"
+            in2="shape"
+            result="effect1_innerShadow_close"
+          />
+        </Filter>
+      </Defs>
+    </Svg>
+  </TouchableOpacity>
+);
 
 const PositiveIconYellowSVG = () => (
   <Svg width="11" height="11" viewBox="0 0 11 11" fill="none">
@@ -379,6 +744,9 @@ const ClockIcon = () => (
   </Svg>
 );
 
+// ==========================================
+// STYLES (100% seus, sem alteração)
+// ==========================================
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
@@ -560,5 +928,243 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "300",
     color: "rgba(0, 26, 35, 0.5)",
+  },
+  // ── Estilos do modal (do Raul) ──
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#012A36",
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    height: height * 0.85,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -5 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 20,
+    borderTopWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#E8F1F2",
+  },
+  modalSubTitle: {
+    fontSize: 18,
+    color: "#EEE82C",
+    fontWeight: "600",
+    marginBottom: 5,
+  },
+  modalInfoText: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.7)",
+    marginBottom: 25,
+  },
+  modalSection: {
+    marginBottom: 25,
+  },
+  modalSectionTitle: {
+    fontSize: 14,
+    color: "#FFFFFF",
+    fontWeight: "500",
+    marginBottom: 10,
+  },
+  modalInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#001A23",
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    height: 50,
+  },
+  modalInput: {
+    flex: 1,
+    color: "#FFF",
+    paddingHorizontal: 15,
+    fontSize: 14,
+  },
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  checkboxRowActive: {
+    backgroundColor: "rgba(238, 232, 44, 0.1)",
+    borderColor: "rgba(238, 232, 44, 0.3)",
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.3)",
+    marginRight: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkboxActive: {
+    backgroundColor: "#EEE82C",
+    borderColor: "#EEE82C",
+  },
+  checkboxText: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.7)",
+    flex: 1,
+  },
+  checkboxTextActive: {
+    color: "#EEE82C",
+  },
+  uploadMainContainer: {
+    borderRadius: 20,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    borderStyle: "dashed",
+  },
+  uploadDashedArea: {
+    padding: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  uploadContent: {
+    alignItems: "center",
+    gap: 12,
+  },
+  uploadTitle: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#E8F1F2",
+  },
+  uploadIconCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  uploadSub: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.5)",
+    textAlign: "center",
+  },
+  modalSearchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#001A23",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    gap: 8,
+  },
+  modalSearchInput: {
+    flex: 1,
+    color: "#FFF",
+    fontSize: 14,
+  },
+  voluntariosList: {
+    gap: 8,
+  },
+  voluntarioRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderRadius: 12,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  voluntarioInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  voluntarioAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#004E69",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  voluntarioAvatarText: {
+    color: "#EEE82C",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  voluntarioNome: {
+    color: "#E8F1F2",
+    fontSize: 14,
+  },
+  presencaBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    backgroundColor: "rgba(238, 232, 44, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(238, 232, 44, 0.3)",
+  },
+  presencaBtnText: {
+    color: "#EEE82C",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  modalFooter: {
+    flexDirection: "row",
+    gap: 12,
+    paddingTop: 16,
+    paddingBottom: Platform.OS === "ios" ? 20 : 16,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.08)",
+  },
+  modalButtonVoltar: {
+    flex: 1,
+    height: 50,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+  modalButtonVoltarText: {
+    color: "#E8F1F2",
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  modalButtonFinalizar: {
+    flex: 2,
+    height: 50,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#EEE82C",
+  },
+  modalButtonFinalizarText: {
+    color: "#001A23",
+    fontSize: 15,
+    fontWeight: "700",
   },
 });
