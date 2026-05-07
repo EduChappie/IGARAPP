@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   participateButton: {
-    width: 164,
+    width: 340,
     height: 55,
     flexDirection: "row",
     alignItems: "center",
