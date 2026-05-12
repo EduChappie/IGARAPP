@@ -60,7 +60,7 @@ export default function RootLayout() {
             <TouchableOpacity 
               style={styles.tabIcon} 
               activeOpacity={0.7}
-              onPress={() => router.push("/perfil_ong")}
+              onPress={() => router.push("/perfil_pf")}
             >
               <UserIcon active={pathname === "/perfil_pf"} />
             </TouchableOpacity>

@@ -144,7 +144,6 @@ const VOLUNTARIOS_MOCK = [
 export default function HomeUserScreen() {
   const router = useRouter();
 
-  // ── Estado do modal (vindo do código do Raul) ──
   const [modalVisible, setModalVisible] = useState(false);
   const [acaoSelecionada, setAcaoSelecionada] = useState<any>(null);
   const [lixoRecolhido, setLixoRecolhido] = useState("");
@@ -228,13 +227,14 @@ export default function HomeUserScreen() {
                 key={item.id}
                 data={item}
                 onPressCard={() => abrirModalFinalizar(item)}
+                onPressEditar={() => router.push("../editar_acao")}
               />
             ))}
           </View>
         </SafeAreaView>
       </ScrollView>
 
-      {/* ── MODAL (do Raul) ── */}
+      {/* MODAL */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -438,9 +438,11 @@ export default function HomeUserScreen() {
 const ProjectCard = ({
   data,
   onPressCard,
+  onPressEditar,
 }: {
   data: any;
   onPressCard: () => void;
+  onPressEditar: () => void;
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
@@ -509,6 +511,19 @@ const ProjectCard = ({
               </View>
             )}
           />
+
+          {/* BOTÃO EDITAR AÇÃO — sobre a imagem, canto inferior direito */}
+          <TouchableOpacity
+            style={styles.editarAcaoButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              onPressEditar();
+            }}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="pencil" size={11} color="#FFFFFF" />
+            <Text style={styles.editarAcaoText}>Editar ação</Text>
+          </TouchableOpacity>
         </View>
 
         {/* PAGINAÇÃO */}
@@ -745,7 +760,7 @@ const ClockIcon = () => (
 );
 
 // ==========================================
-// STYLES (100% seus, sem alteração)
+// STYLES
 // ==========================================
 const styles = StyleSheet.create({
   mainContainer: {
@@ -871,6 +886,26 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 255, 255, 0.7)",
     borderRadius: 30,
   },
+  // ── BOTÃO EDITAR AÇÃO ──
+  editarAcaoButton: {
+  position: "absolute",
+  bottom: 12,
+  right: 12,
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 5,
+  backgroundColor: "rgba(0, 0, 0, 0.45)",
+  paddingHorizontal: 13,
+  paddingVertical: 7,
+  borderRadius: 999,
+  borderWidth: 0.7,
+  borderColor: "rgba(255, 255, 255, 0.2)",
+},
+editarAcaoText: {
+  fontSize: 12,
+  fontWeight: "500",
+  color: "#FFFFFF",
+},
   pagination: {
     flexDirection: "row",
     justifyContent: "center",
@@ -929,7 +964,7 @@ const styles = StyleSheet.create({
     fontWeight: "300",
     color: "rgba(0, 26, 35, 0.5)",
   },
-  // ── Estilos do modal (do Raul) ──
+  // ── Estilos do modal ──
   modalOverlay: {
     flex: 1,
     justifyContent: "flex-end",
