@@ -55,7 +55,6 @@ export default function LoginScreen() {
 
       // Redireciona para home_user após login bem-sucedido
       setTimeout(() => {
-        console.log(user)
         if (user?.tipo == "voluntário") {
           router.replace("/home_user");
 

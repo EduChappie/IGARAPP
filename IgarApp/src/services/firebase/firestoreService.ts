@@ -223,13 +223,16 @@ export const acaoService = {
     try {
       const acoesRef = collection(firestore, 'acoes');
       const q = query(
-        acoesRef,
-        where('dataEvento', '>=', new Date()),
-        orderBy('dataEvento', 'asc'),
+        acoesRef, 
+        orderBy('data', 'asc'),
         limit(limitCount)
       );
 
       const snapshot = await getDocs(q);
+      console.log("Total de docs retornados:", snapshot.size);
+      snapshot.forEach((doc) => {
+        console.log("Doc encontrado:", doc.id, doc.data());
+      }); 
       const acoes: Acao[] = [];
 
       snapshot.forEach((doc) => {

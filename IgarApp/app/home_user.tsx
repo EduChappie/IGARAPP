@@ -1,7 +1,10 @@
+import { useAuth } from "@/src/contexts/AuthContext";
+import { acaoService, Acao } from "@/src/services/firebase/firestoreService";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   FlatList,
   Image,
@@ -32,95 +35,30 @@ import Svg, {
 
 const { width } = Dimensions.get("window");
 
-// ==========================================
-// DADOS DOS 6 CARDS
-// ==========================================
-const FEED_DATA = [
-  {
-    id: "1",
-    orgName: "Igarape S.P.",
-    title: "Igarapé do Mindú",
-    subtitle: "Manaus, Amazonas",
-    volunteers: "25 Voluntários",
-    date: "28/05/2026",
-    time: "14:25H - 17:00H",
-    images: [
-      require("../src/assets/image_card_1.png"),
-      require("../src/assets/image_card_1.png"),
-      require("../src/assets/image_card_1.png"),
-    ],
-  },
-  {
-    id: "2",
-    orgName: "Igarape S.P.",
-    title: "Limpeza Praia da Lua",
-    subtitle: "Manaus, Amazonas",
-    volunteers: "50 Voluntários",
-    date: "30/05/2026",
-    time: "08:00H - 12:00H",
-    images: [
-      require("../src/assets/image_card_1.png"),
-      require("../src/assets/image_card_1.png"),
-    ],
-  },
-  {
-    id: "3",
-    orgName: "Igarape S.P.",
-    title: "Plantio Muda Tarumã",
-    subtitle: "Manaus, Amazonas",
-    volunteers: "15 Voluntários",
-    date: "12/06/2026",
-    time: "07:30H - 10:00H",
-    images: [
-      require("../src/assets/image_card_1.png"),
-      require("../src/assets/image_card_1.png"),
-      require("../src/assets/image_card_1.png"),
-    ],
-  },
-  {
-    id: "4",
-    orgName: "Igarape S.P.",
-    title: "Coleta Seletiva Centro",
-    subtitle: "Manaus, Amazonas",
-    volunteers: "40 Voluntários",
-    date: "20/06/2026",
-    time: "09:00H - 14:00H",
-    images: [
-      require("../src/assets/image_card_1.png"),
-      require("../src/assets/image_card_1.png"),
-    ],
-  },
-  {
-    id: "5",
-    orgName: "Igarape S.P.",
-    title: "Revitalização Parque Dez",
-    subtitle: "Manaus, Amazonas",
-    volunteers: "35 Voluntários",
-    date: "02/07/2026",
-    time: "15:00H - 18:00H",
-    images: [
-      require("../src/assets/image_card_1.png"),
-      require("../src/assets/image_card_1.png"),
-      require("../src/assets/image_card_1.png"),
-    ],
-  },
-  {
-    id: "6",
-    orgName: "Igarape S.P.",
-    title: "Ação Social Educativa",
-    subtitle: "Manaus, Amazonas",
-    volunteers: "20 Voluntários",
-    date: "15/07/2026",
-    time: "13:00H - 16:30H",
-    images: [
-      require("../src/assets/image_card_1.png"),
-      require("../src/assets/image_card_1.png"),
-    ],
-  },
-];
-
 export default function HomeUserScreen() {
   const router = useRouter();
+  const {user} = useAuth();
+
+  // ==========================================
+  // ESTADO DO FEED (substituiu a constante estática)
+  // ==========================================
+  const [acoes, setAcoes] = useState<Acao[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const carregarAcoes = async () => {
+      try {
+        const dados = await acaoService.getAcoesAtivas();
+        setAcoes(dados);
+      } catch (error) {
+        console.error("Erro ao carregar ações:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    carregarAcoes();
+  }, []);
 
   // Função para botões normais que empilham tela
   const handleNav = (rota: string) => {
@@ -151,7 +89,7 @@ export default function HomeUserScreen() {
               </View>
 
               <View>
-                <Text style={styles.greetingText}>Olá, Usuário</Text>
+                <Text style={styles.greetingText}>Olá, {user?.nome} </Text>
                 <Text style={styles.userNameText}>Pronto pra salvar a amazônia hoje?</Text>
               </View>
             </View>
@@ -169,9 +107,28 @@ export default function HomeUserScreen() {
 
           {/* LISTA DE CARDS (FEED) */}
           <View style={styles.feedContainer}>
-            {FEED_DATA.map((item) => (
-              <ProjectCard key={item.id} data={item} handleNav={handleNav} />
-            ))}
+            {loading ? (
+              <ActivityIndicator size="large" color="#91CB3E" style={{ marginTop: 40 }} />
+            ) : (
+              acoes.map((acao) => {
+                // Adaptador: converte os campos do Firestore para o formato do ProjectCard
+                const cardData = {
+                  id: acao.id!,
+                  orgName: `${acao.cidade}, ${acao.estado}`,
+                  title: acao.titulo,
+                  subtitle: `${acao.cidade}, ${acao.estado}`,
+                  volunteers: `${acao.voluntariosInscritos} Voluntários`,
+                  date: acao.dataEvento.toLocaleDateString("pt-BR"),
+                  time: `${acao.horaInicio} - ${acao.horaFim}`,
+                  // URLs do Firebase Storage viram { uri: url }, fallback para imagem local
+                  images: acao.imagens.length > 0
+                    ? acao.imagens.map((url) => ({ uri: url }))
+                    : [require("../src/assets/image_card_1.png")],
+                };
+
+                return <ProjectCard key={cardData.id} data={cardData} handleNav={handleNav} />;
+              })
+            )}
           </View>
         </SafeAreaView>
       </ScrollView>
