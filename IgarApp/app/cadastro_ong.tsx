@@ -309,9 +309,9 @@ export default function CadastroOngScreen() {
             </View>
           </View>
         ) : (
-          /* FORMULÁRIO (ETAPAS 1-3) */
-          <View style={extra.bottomActionContainer}>
-            <View style={{ paddingTop: 5 }}>
+          /* FORMULÁRIO (ETAPAS 1-3) o paddingTop controla a distância do topo da tela ao formulário, mude para melhorar a disposição, se quiser ! */
+          <View style={[extra.bottomActionContainer, step !== 1 && { justifyContent: 'flex-start', paddingTop: 320 }]}>
+            <View>
               {/* INDICADOR DE ETAPAS */}
               <View style={[cadastroExtra.stepContainer, { marginBottom: 15 }]}>
                 <View style={cadastroExtra.stepDot} />
@@ -410,7 +410,9 @@ export default function CadastroOngScreen() {
                   </View>
 
                   <TouchableOpacity
-                    onPress={() => setStep(2)}
+                    onPress={() => {
+                      setStep(2);
+                    }}
                     disabled={!isStep1Valid}
                     style={[
                       cadastroExtra.buttonProximaEtapa,
@@ -433,7 +435,7 @@ export default function CadastroOngScreen() {
               {/* ETAPA 2: INFORMAÇÕES ADICIONAIS */}
               {step === 2 && (
                 <>
-                  <Text style={cadastroExtra.labelSmall}>Data de Fundação</Text>
+                  <Text style={[cadastroExtra.labelSmall, { marginTop: 0 }]}>Data de Fundação</Text>
                   <TextInput
                     placeholder="DD/MM/AAAA"
                     placeholderTextColor="rgba(255,255,255,0.35)"
@@ -481,16 +483,22 @@ export default function CadastroOngScreen() {
                     onBlur={() => setFocused("")}
                   />
 
-                  <View style={{ flexDirection: "row", gap: 12 }}>
+                  <View style={{ flexDirection: "row", gap: 12, marginTop: 30 }}>
                     <TouchableOpacity
-                      onPress={() => setStep(1)}
+                      onPress={() => {
+                        console.log('Botão Voltar clicado - Step 2 para Step 1');
+                        setStep(1);
+                      }}
                       style={cadastroExtra.buttonVoltar}
                     >
                       <Text style={cadastroExtra.buttonVoltarText}>Voltar</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      onPress={() => setStep(3)}
+                      onPress={() => {
+                        console.log('Botão Próxima Etapa clicado - Step 2 para Step 3');
+                        setStep(3);
+                      }}
                       disabled={!isStep2Valid}
                       style={[
                         cadastroExtra.buttonProximaEtapa,
