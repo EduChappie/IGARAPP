@@ -2,7 +2,7 @@ import { extra, styles } from "@/styles/_style";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { use, useState } from "react";
 import {
   Image,
   StyleSheet,
@@ -16,9 +16,11 @@ import {
 import Svg, { G, Path, Rect } from "react-native-svg";
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/src/services/firebase/config';
+import { useAuth } from "@/src/contexts/AuthContext";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [isFocused1, setIsFocused1] = useState(false);
@@ -53,7 +55,14 @@ export default function LoginScreen() {
 
       // Redireciona para home_user após login bem-sucedido
       setTimeout(() => {
-        router.replace("/home_user");
+        console.log(user)
+        if (user?.tipo == "voluntário") {
+          router.replace("/home_user");
+
+        } else if (user?.tipo == "ong") {
+          router.replace("/home_ong");
+        }
+        
       }, 50);
     } catch (error: any) {
       console.error("Erro no login:", error);
