@@ -10,8 +10,12 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import Svg, { G, Path, Rect } from "react-native-svg";
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/src/services/firebase/config';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -20,6 +24,9 @@ export default function LoginScreen() {
   const [isFocused1, setIsFocused1] = useState(false);
   const [isFocused2, setIsFocused2] = useState(false);
   const [isPasswordHidden, setIsPasswordHidden] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   // --- PADRÃO DE NAVEGAÇÃO SUAVE (50ms) ---
   const handleNavigation = (rota: string) => {
@@ -34,6 +41,58 @@ export default function LoginScreen() {
 
   // --- VALIDAÇÃO DO FORMULÁRIO ---
   const isFormValid = email.trim().includes("@") && senha.length >= 6;
+
+  // --- LOGIN COM FIREBASE AUTH ---
+  const handleLogin = async () => {
+    if (!isFormValid) return;
+
+    setLoading(true);
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, senha);
+      console.log("Login bem-sucedido:", userCredential.user.uid);
+
+      // Redireciona para home_user após login bem-sucedido
+      setTimeout(() => {
+        router.replace("/home_user");
+      }, 50);
+    } catch (error: any) {
+      console.error("Erro no login:", error);
+
+      // Tratamento de erros específicos do Firebase
+      let message = "Erro ao fazer login. Tente novamente.";
+
+      switch (error.code) {
+        case 'auth/invalid-email':
+          message = "Email inválido. Verifique o formato.";
+          break;
+        case 'auth/user-disabled':
+          message = "Esta conta foi desativada.";
+          break;
+        case 'auth/user-not-found':
+          message = "Usuário não encontrado. Verifique o email.";
+          break;
+        case 'auth/wrong-password':
+          message = "Senha incorreta. Tente novamente.";
+          break;
+        case 'auth/too-many-requests':
+          message = "Muitas tentativas. Tente mais tarde.";
+          break;
+        case 'auth/network-request-failed':
+          message = "Erro de conexão. Verifique sua internet.";
+          break;
+      }
+
+      setErrorMessage(message);
+      setErrorModalVisible(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const closeErrorModal = () => {
+    setErrorModalVisible(false);
+    setErrorMessage("");
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: "#012A36" }}>
@@ -113,11 +172,11 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* BOTÃO ACESSAR COM VALIDAÇÃO (BRANCO -> AMARELO) */}
+            {/* BOTÃO ACESSAR COM FIREBASE AUTH */}
             <TouchableOpacity
-              disabled={!isFormValid}
+              disabled={!isFormValid || loading}
               activeOpacity={0.6}
-              onPress={() => handleNavigation("/home_user")}
+              onPress={handleLogin}
               style={[
                 extra.buttonSubmit,
                 !isFormValid
@@ -125,13 +184,19 @@ export default function LoginScreen() {
                   : { backgroundColor: "#EEE82C" },
               ]}
             >
-              <Text style={extra.buttonSubmitText}>Acessar Conta</Text>
-              <Ionicons
-                name={"arrow-forward"}
-                style={{ transform: [{ rotate: "-45deg" }] }}
-                size={20}
-                color={"#000000"}
-              />
+              {loading ? (
+                <ActivityIndicator color="#000000" size="small" />
+              ) : (
+                <>
+                  <Text style={extra.buttonSubmitText}>Acessar Conta</Text>
+                  <Ionicons
+                    name={"arrow-forward"}
+                    style={{ transform: [{ rotate: "-45deg" }] }}
+                    size={20}
+                    color={"#000000"}
+                  />
+                </>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -146,6 +211,32 @@ export default function LoginScreen() {
           </Text>
         </View>
       </View>
+
+      {/* MODAL DE ERRO */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={errorModalVisible}
+        onRequestClose={closeErrorModal}
+      >
+        <View style={modalStyles.modalOverlay}>
+          <View style={modalStyles.modalContainer}>
+            <View style={modalStyles.modalHeader}>
+              <Text style={modalStyles.modalTitle}>Erro no Login</Text>
+              <TouchableOpacity onPress={closeErrorModal}>
+                <Ionicons name="close" size={24} color="#E8F1F2" />
+              </TouchableOpacity>
+            </View>
+            <Text style={modalStyles.modalMessage}>{errorMessage}</Text>
+            <TouchableOpacity
+              style={modalStyles.modalButton}
+              onPress={closeErrorModal}
+            >
+              <Text style={modalStyles.modalButtonText}>Entendi</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -203,3 +294,50 @@ const TopGlassButton = ({ onPress }: { onPress: () => void }) => (
     </Svg>
   </TouchableOpacity>
 );
+
+const modalStyles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 26, 35, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  modalContainer: {
+    backgroundColor: "#002C3B",
+    borderRadius: 20,
+    padding: 24,
+    width: "100%",
+    maxWidth: 340,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.15)",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#E8F1F2",
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: "#A0B3B8",
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  modalButton: {
+    backgroundColor: "#EEE82C",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#001A23",
+  },
+});

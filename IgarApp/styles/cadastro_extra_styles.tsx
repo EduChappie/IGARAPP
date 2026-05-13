@@ -124,4 +124,55 @@ export const cadastroExtra = StyleSheet.create({
     fontSize: 15,
     marginRight: 6,
   },
+
+  // --- TextArea para campos de texto longo ---
+  textArea: {
+    backgroundColor: "rgba(0, 50, 70, 0.85)",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(0, 100, 130, 0.6)",
+    color: "#FFFFFF",
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    fontSize: 13,
+    width: "100%",
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  textAreaFocused: {
+    borderColor: "#A6FF00",
+  },
+
+  // --- Botão Voltar ---
+  buttonVoltar: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+  },
+  buttonVoltarText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 15,
+  },
+
+  // --- Checkbox ---
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "#A6FF00",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  checkboxLabel: {
+    color: "#FFFFFF",
+    fontSize: 14,
+  },
 });

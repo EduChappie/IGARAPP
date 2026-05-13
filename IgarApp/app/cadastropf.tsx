@@ -12,8 +12,13 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import Svg, { G, Path, Rect } from "react-native-svg";
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, firestore } from '@/src/services/firebase/config';
 
 // AQUI ESTAVA O ERRO! A função DEVE começar com letra Maiúscula no React.
 export default function CadastroPFScreen() {
@@ -26,6 +31,9 @@ export default function CadastroPFScreen() {
   const [isPasswordHidden, setIsPasswordHidden] = useState(true);
   const [dataNascimento, setDataNascimento] = useState("");
   const [telefone, setTelefone] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   function passwordVisibility() {
     setIsPasswordHidden(!isPasswordHidden);
@@ -52,6 +60,88 @@ export default function CadastroPFScreen() {
     senha.length >= 6 &&
     dataNascimento.length === 10 && // Espera DD/MM/AAAA
     telefone.length >= 14; // Espera (XX) 9XXXX-XXXX
+
+  // --- CADASTRO COM FIREBASE AUTH E FIRESTORE ---
+  const handleCadastro = async () => {
+    if (!isFormValid) return;
+
+    setLoading(true);
+    try {
+      // 1. Criar usuário no Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+      const userId = userCredential.user.uid;
+
+      console.log("Usuário criado no Auth:", userId);
+
+      // 2. Preparar dados para o Firestore
+      const userData = {
+        nome: username.trim(),
+        email: email.trim(),
+        telefone: telefone.trim(),
+        dataNascimento: dataNascimento.trim(),
+        tipo: "voluntário",
+        dataCriacao: serverTimestamp(),
+        uid: userId,
+      };
+
+      // 3. Salvar dados adicionais no Firestore (collection "users")
+      console.log("Tentando salvar no Firestore - collection: users, userId:", userId);
+      const userDocRef = doc(firestore, "users", userId);
+
+      try {
+        await setDoc(userDocRef, userData);
+        console.log("✅ Dados salvos com SUCESSO no Firestore:", userData);
+      } catch (firestoreError: any) {
+        console.error("❌ Erro ao salvar no Firestore:", firestoreError);
+        console.error("Código do erro:", firestoreError.code);
+        console.error("Mensagem do erro:", firestoreError.message);
+        throw firestoreError; // Re-lançar o erro para ser capturado pelo catch externo
+      }
+
+      // 4. Avançar para tela de sucesso
+      setStep(2);
+
+    } catch (error: any) {
+      console.error("❌❌❌ ERRO COMPLETO no cadastro:", error);
+      console.error("Código:", error.code);
+      console.error("Mensagem:", error.message);
+      console.error("Stack:", error.stack);
+
+      // Tratamento de erros específicos do Firebase
+      let message = "Erro ao criar conta. Tente novamente.";
+
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          message = "Este email já está em uso. Tente fazer login.";
+          break;
+        case 'auth/invalid-email':
+          message = "Email inválido. Verifique o formato.";
+          break;
+        case 'auth/weak-password':
+          message = "Senha muito fraca. Use pelo menos 6 caracteres.";
+          break;
+        case 'auth/operation-not-allowed':
+          message = "Operação não permitida. Contate o suporte.";
+          break;
+        case 'auth/network-request-failed':
+          message = "Erro de conexão. Verifique sua internet.";
+          break;
+        case 'auth/too-many-requests':
+          message = "Muitas tentativas. Tente mais tarde.";
+          break;
+      }
+
+      setErrorMessage(message);
+      setErrorModalVisible(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const closeErrorModal = () => {
+    setErrorModalVisible(false);
+    setErrorMessage("");
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: "#012A36" }}>
@@ -189,7 +279,7 @@ export default function CadastroPFScreen() {
                 style={[
                   cadastroExtra.inputFieldFullWidth,
                   focused === "username" &&
-                    cadastroExtra.inputFieldFullWidthFocused,
+                  cadastroExtra.inputFieldFullWidthFocused,
                 ]}
                 onFocus={() => setFocused("username")}
                 onBlur={() => setFocused("")}
@@ -222,7 +312,7 @@ export default function CadastroPFScreen() {
                     style={[
                       cadastroExtra.passwordWrapper,
                       focused === "senha" &&
-                        cadastroExtra.passwordWrapperFocused,
+                      cadastroExtra.passwordWrapperFocused,
                     ]}
                   >
                     <TextInput
@@ -266,7 +356,7 @@ export default function CadastroPFScreen() {
                     style={[
                       cadastroExtra.inputField,
                       focused === "dataNascimento" &&
-                        cadastroExtra.inputFieldFocused,
+                      cadastroExtra.inputFieldFocused,
                     ]}
                     onFocus={() => setFocused("dataNascimento")}
                     onBlur={() => setFocused("")}
@@ -292,59 +382,81 @@ export default function CadastroPFScreen() {
                 </View>
               </View>
 
-              {/* BOTÃO ENVIAR RESPOSTA COM VALIDAÇÃO */}
+              {/* BOTÃO CADASTRAR COM FIREBASE */}
               <TouchableOpacity
-                onPress={() => setStep(2)}
-                disabled={!isFormValid}
+                onPress={handleCadastro}
+                disabled={!isFormValid || loading}
                 style={[
                   cadastroExtra.buttonProximaEtapa,
-                  { marginTop: 25, marginBottom: 15 },
-                  !isFormValid
-                    ? { backgroundColor: "#FFFFFF" }
-                    : { backgroundColor: "#EEE82C" },
+                  !isFormValid && { backgroundColor: "#FFFFFF" },
                 ]}
               >
-                <Text
-                  style={[
-                    cadastroExtra.buttonProximaEtapaText,
-                    !isFormValid
-                      ? { color: "rgba(0, 26, 35, 0.4)" }
-                      : { color: "#001A23" },
-                  ]}
-                >
-                  Enviar respostas
-                </Text>
-                <Ionicons
-                  name={"arrow-forward"}
-                  style={{ transform: [{ rotate: "-45deg" }] }}
-                  size={18}
-                  color={!isFormValid ? "rgba(0, 26, 35, 0.4)" : "#001A23"}
-                />
+                {loading ? (
+                  <ActivityIndicator color="#000000" size="small" />
+                ) : (
+                  <>
+                    <Text style={cadastroExtra.buttonProximaEtapaText}>
+                      Criar Conta
+                    </Text>
+                    <Ionicons
+                      name={"arrow-forward"}
+                      style={{ transform: [{ rotate: "-45deg" }] }}
+                      size={18}
+                      color={"black"}
+                    />
+                  </>
+                )}
               </TouchableOpacity>
             </View>
 
-            <Text style={[extra.termsAndPrivacyText, { marginTop: 40 }]}>
-              Ao criar sua conta no <Text style={styles.destaque}>IgarApp</Text>
-              , você estará concordando{"\n"}
-              com os{" "}
-              <Text style={styles.destaque}>
-                <Text style={styles.underline}>Termos de Uso</Text>
-              </Text>{" "}
-              e{" "}
-              <Text style={styles.destaque}>
-                <Text style={styles.underline}>Política de Privacidade</Text>
+            <View style={{ marginTop: 80 }}>
+              <Text style={extra.termsAndPrivacyText}>
+                Ao criar sua conta no{" "}
+                <Text style={styles.destaque}>IgarApp</Text>, você estará
+                concordando{"\n"}
+                com os{" "}
+                <Text style={styles.destaque}>
+                  <Text style={styles.underline}>Termos de Uso</Text>
+                </Text>{" "}
+                e{" "}
+                <Text style={styles.destaque}>
+                  <Text style={styles.underline}>Política de Privacidade</Text>
+                </Text>
               </Text>
-            </Text>
+            </View>
           </View>
         )}
       </View>
+
+      {/* MODAL DE ERRO */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={errorModalVisible}
+        onRequestClose={closeErrorModal}
+      >
+        <View style={localStyles.modalOverlay}>
+          <View style={localStyles.modalContainer}>
+            <View style={localStyles.modalHeader}>
+              <Text style={localStyles.modalTitle}>Erro no Cadastro</Text>
+              <TouchableOpacity onPress={closeErrorModal}>
+                <Ionicons name="close" size={24} color="#E8F1F2" />
+              </TouchableOpacity>
+            </View>
+            <Text style={localStyles.modalMessage}>{errorMessage}</Text>
+            <TouchableOpacity
+              style={localStyles.modalButton}
+              onPress={closeErrorModal}
+            >
+              <Text style={localStyles.modalButtonText}>Entendi</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
-// ==========================================
-// COMPONENTE DO BOTÃO DE VOLTAR
-// ==========================================
 const TopGlassButton = ({ onPress }: { onPress: () => void }) => (
   <TouchableOpacity
     style={{
@@ -398,3 +510,50 @@ const TopGlassButton = ({ onPress }: { onPress: () => void }) => (
     </Svg>
   </TouchableOpacity>
 );
+
+const localStyles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 26, 35, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  modalContainer: {
+    backgroundColor: "#002C3B",
+    borderRadius: 20,
+    padding: 24,
+    width: "100%",
+    maxWidth: 340,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.15)",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#E8F1F2",
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: "#A0B3B8",
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  modalButton: {
+    backgroundColor: "#EEE82C",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#001A23",
+  },
+});
