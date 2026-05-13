@@ -113,7 +113,7 @@ export const cadastroExtra = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     width: "100%",
-    padding: 15,
+    height: 48,
     borderRadius: 10,
     marginTop: 20,
     marginBottom: 20,
@@ -121,7 +121,7 @@ export const cadastroExtra = StyleSheet.create({
   buttonProximaEtapaText: {
     color: "#000000",
     fontWeight: "600",
-    fontSize: 15,
+    fontSize: 14,
     marginRight: 6,
   },
 
@@ -149,15 +149,17 @@ export const cadastroExtra = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    padding: 15,
+    marginTop: 20,
+    height: 48,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.2)",
+    flex: 1,
   },
   buttonVoltarText: {
     color: "#FFFFFF",
     fontWeight: "600",
-    fontSize: 15,
+    fontSize: 14,
   },
 
   // --- Checkbox ---
