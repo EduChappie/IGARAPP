@@ -42,6 +42,8 @@ export interface Acao {
   imagens: string[];
   metas: string[];
   orientacoes: string;
+  lixoRecolhido?: string;
+  metasConcluidas?: number[];
   createdAt?: any; // Firestore timestamp
 }
 
@@ -163,6 +165,22 @@ export const acaoService = {
     }
   },
 
+  // Editar ação existente (usado ao finalizar)
+  async editarAcao(acaoId: string, campos: Partial<Omit<Acao, 'id' | 'createdAt'>>): Promise<void> {
+    try {
+      const acaoRef = doc(firestore, 'acoes', acaoId);
+      await updateDoc(acaoRef, {
+        ...campos,
+        updatedAt: serverTimestamp(),
+      });
+
+      console.log('Ação editada com sucesso:', acaoId);
+    } catch (error: any) {
+      console.error('Erro ao editar ação:', error);
+      throw error;
+    }
+  },
+
   // Buscar ação por ID
   async getAcaoById(acaoId: string): Promise<Acao | null> {
     try {
@@ -189,6 +207,8 @@ export const acaoService = {
         imagens: info?.imagens || [],
         metas: info?.metas || [],
         orientacoes: info?.orientacoes || '',
+        lixoRecolhido: info?.lixoRecolhido || '',
+        metasConcluidas: info?.metasConcluidas || [],
         createdAt: info?.createdAt,
       };
     } catch (error: any) {
@@ -229,6 +249,8 @@ export const acaoService = {
             imagens: data?.imagens || [],
             metas: data?.metas || [],
             orientacoes: data?.orientacoes || '',
+            lixoRecolhido: data?.lixoRecolhido || '',
+            metasConcluidas: data?.metasConcluidas || [],
             createdAt: data?.createdAt,
           });
         }
@@ -279,6 +301,8 @@ export const acaoService = {
           imagens: info?.imagens || [],
           metas: info?.metas || [],
           orientacoes: info?.orientacoes || '',
+          lixoRecolhido: info?.lixoRecolhido || '',
+          metasConcluidas: info?.metasConcluidas || [],
           createdAt: info?.createdAt,
         });
       });

@@ -1,5 +1,5 @@
 import { useAuth } from "@/src/contexts/AuthContext";
-import { acaoService, Acao } from "@/src/services/firebase/firestoreService";
+import { acaoService, Acao, showSuccessAlert, showErrorAlert } from "@/src/services/firebase/firestoreService";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
@@ -80,6 +80,7 @@ export default function HomeUserScreen() {
   const [lixoRecolhido, setLixoRecolhido] = useState("");
   const [metasConcluidas, setMetasConcluidas] = useState<number[]>([]);
   const [buscaVoluntario, setBuscaVoluntario] = useState("");
+  const [loadingFinalizar, setLoadingFinalizar] = useState(false);
 
   const abrirModalFinalizar = (cardData: any, acaoOriginal: Acao) => {
     // Passa o cardData para exibição + as metas da ação original do Firestore
@@ -93,6 +94,39 @@ export default function HomeUserScreen() {
   const fecharModal = () => {
     setModalVisible(false);
     setTimeout(() => setAcaoSelecionada(null), 300);
+  };
+
+  useEffect(() => {
+  if (!modalVisible || !acaoSelecionada?.id) return;
+ 
+  acaoService.getAcaoById(acaoSelecionada.id).then((acao) => {
+    if (!acao) return;
+    setLixoRecolhido(acao.lixoRecolhido || '');
+    setMetasConcluidas(acao.metasConcluidas || []);
+  });
+}, [modalVisible, acaoSelecionada?.id]);
+
+  const handleFinalizarAcao = async () => {
+    if (!acaoSelecionada?.id) {
+      showErrorAlert('Ação inválida. Tente novamente.');
+      return;
+    }
+  
+    try {
+      setLoadingFinalizar(true);
+  
+      await acaoService.editarAcao(acaoSelecionada.id, {
+        lixoRecolhido: lixoRecolhido.trim(),
+        metasConcluidas,
+      });
+  
+      showSuccessAlert('Ação finalizada com sucesso!');
+      fecharModal();
+    } catch (error) {
+      showErrorAlert('Não foi possível finalizar a ação. Tente novamente.');
+    } finally {
+      setLoadingFinalizar(false);
+    }
   };
 
   const toggleMeta = (index: number) => {
@@ -202,14 +236,14 @@ export default function HomeUserScreen() {
             tint="dark"
             style={StyleSheet.absoluteFillObject}
           />
-
+      
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <CloseGlassButton onPress={fecharModal} />
               <Text style={styles.modalTitle}>Finalizar Ação</Text>
               <View style={{ width: 44 }} />
             </View>
-
+      
             <ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: 20 }}
@@ -220,7 +254,7 @@ export default function HomeUserScreen() {
                   ? acaoSelecionada.date + " • " + acaoSelecionada.time
                   : ""}
               </Text>
-
+      
               {/* Quantidade de Lixo */}
               <View style={styles.modalSection}>
                 <Text style={styles.modalSectionTitle}>
@@ -243,7 +277,7 @@ export default function HomeUserScreen() {
                   />
                 </View>
               </View>
-
+      
               {/* Checklist de Metas */}
               <View style={styles.modalSection}>
                 <Text style={styles.modalSectionTitle}>Checklist de Metas</Text>
@@ -287,7 +321,7 @@ export default function HomeUserScreen() {
                   },
                 )}
               </View>
-
+      
               {/* Fotos */}
               <View style={styles.modalSection}>
                 <Text style={styles.modalSectionTitle}>
@@ -316,7 +350,7 @@ export default function HomeUserScreen() {
                   </View>
                 </TouchableOpacity>
               </View>
-
+      
               {/* Lista de Presença */}
               <View style={styles.modalSection}>
                 <Text style={styles.modalSectionTitle}>Lista de Presença</Text>
@@ -357,7 +391,7 @@ export default function HomeUserScreen() {
                 </View>
               </View>
             </ScrollView>
-
+      
             <View style={styles.modalFooter}>
               <TouchableOpacity
                 style={styles.modalButtonVoltar}
@@ -365,16 +399,19 @@ export default function HomeUserScreen() {
               >
                 <Text style={styles.modalButtonVoltarText}>Voltar</Text>
               </TouchableOpacity>
-
+      
               <TouchableOpacity
-                style={styles.modalButtonFinalizar}
-                onPress={() => {
-                  fecharModal();
-                }}
+                style={[styles.modalButtonFinalizar, loadingFinalizar && { opacity: 0.7 }]}
+                onPress={handleFinalizarAcao}
+                disabled={loadingFinalizar}
               >
-                <Text style={styles.modalButtonFinalizarText}>
-                  Finalizar Ação
-                </Text>
+                {loadingFinalizar ? (
+                  <ActivityIndicator color="#001A23" />
+                ) : (
+                  <Text style={styles.modalButtonFinalizarText}>
+                    Finalizar Ação
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
