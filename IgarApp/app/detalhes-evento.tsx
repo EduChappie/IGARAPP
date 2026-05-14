@@ -3,6 +3,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState, useEffect } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Dimensions,
   FlatList,
   Image,
@@ -15,8 +17,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Alert,
-  ActivityIndicator,
 } from "react-native";
 import Svg, {
   Circle,
@@ -31,6 +31,9 @@ import { useAuth } from "@/src/contexts/AuthContext";
 import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
 import { firestore } from "@/src/services/firebase/config";
 
+const { width } = Dimensions.get("window");
+
+// Mock de imagens para o carrossel
 const EVENT_IMAGES = [
   require("../src/assets/image_card_1.png"),
   require("../src/assets/image_card_1.png"),
@@ -62,7 +65,7 @@ export default function DetalhesEventoScreen() {
         const querySnapshot = await getDocs(q);
         setAlreadyParticipating(!querySnapshot.empty);
       } catch (error) {
-        console.error('Erro ao verificar participação:', error);
+        console.error("Erro ao verificar participação:", error);
       }
     };
 
@@ -81,11 +84,11 @@ export default function DetalhesEventoScreen() {
   const handleParticipar = async () => {
     if (!user) {
       Alert.alert(
-        'Login necessário',
-        'Você precisa fazer login para participar deste evento.',
+        "Login necessário",
+        "Você precisa fazer login para participar deste evento.",
         [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Fazer Login', onPress: () => router.push('/login_pl') }
+          { text: "Cancelar", style: "cancel" },
+          { text: "Fazer Login", onPress: () => router.push("/login_pl") },
         ]
       );
       return;
@@ -93,9 +96,9 @@ export default function DetalhesEventoScreen() {
 
     if (alreadyParticipating) {
       Alert.alert(
-        'Você já está participando',
-        'Você já está inscrito neste evento.',
-        [{ text: 'OK', style: 'default' }]
+        "Você já está participando",
+        "Você já está inscrito neste evento.",
+        [{ text: "OK", style: "default" }]
       );
       return;
     }
@@ -107,35 +110,32 @@ export default function DetalhesEventoScreen() {
         acaoId: MOCK_EVENT_ID,
         userId: user.uid,
         dataInscricao: new Date(),
-        status: 'confirmado',
-        createdAt: new Date()
+        status: "confirmado",
+        createdAt: new Date(),
       });
-      
+
       Alert.alert(
-        'Sucesso!',
-        'Inscrição realizada com sucesso! Você agora está participando deste evento.',
-        [{ text: 'OK', style: 'default' }]
+        "Sucesso!",
+        "Inscrição realizada com sucesso! Você agora está participando deste evento.",
+        [{ text: "OK", style: "default" }]
       );
       setAlreadyParticipating(true);
-      
-      console.log('Participação registrada com ID:', docRef.id);
+
+      console.log("Participação registrada com ID:", docRef.id);
     } catch (error: any) {
-      console.error('Erro ao participar do evento:', error);
-      
-      let errorMessage = 'Erro ao realizar inscrição. Tente novamente.';
-      
-      // Tratamento de erros específicos
-      if (error.code === 'permission-denied') {
-        errorMessage = 'Permissão negada. Verifique as regras de segurança do Firestore.';
-      } else if (error.code === 'unavailable') {
-        errorMessage = 'Serviço indisponível. Verifique sua conexão com a internet.';
+      console.error("Erro ao participar do evento:", error);
+
+      let errorMessage = "Erro ao realizar inscrição. Tente novamente.";
+
+      if (error.code === "permission-denied") {
+        errorMessage =
+          "Permissão negada. Verifique as regras de segurança do Firestore.";
+      } else if (error.code === "unavailable") {
+        errorMessage =
+          "Serviço indisponível. Verifique sua conexão com a internet.";
       }
-      
-      Alert.alert(
-        'Erro',
-        errorMessage,
-        [{ text: 'OK', style: 'cancel' }]
-      );
+
+      Alert.alert("Erro", errorMessage, [{ text: "OK", style: "cancel" }]);
     } finally {
       setLoading(false);
     }
@@ -407,7 +407,7 @@ export default function DetalhesEventoScreen() {
           <TouchableOpacity
             style={[
               styles.participateButton,
-              alreadyParticipating && styles.participateButtonDisabled
+              alreadyParticipating && styles.participateButtonDisabled,
             ]}
             activeOpacity={0.8}
             onPress={handleParticipar}
@@ -419,7 +419,7 @@ export default function DetalhesEventoScreen() {
               <>
                 <HandHeartIcon />
                 <Text style={styles.participateButtonText}>
-                  {alreadyParticipating ? 'Já está Participando' : 'Quero Participar'}
+                  {alreadyParticipating ? "Já está Participando" : "Quero Participar"}
                 </Text>
               </>
             )}
@@ -505,25 +505,29 @@ const BrazilIcon = () => (
       d="M7.2 7.8 Q 10.5 6 13.8 8.2"
       stroke="#FFFFFF"
       strokeWidth="0.8"
-      strokeLinecap="round"
+      fill="none"
     />
   </Svg>
 );
 
 const MapsIcon = () => (
-  <Svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+  <Svg width="12" height="13" viewBox="0 0 12 13" fill="none">
     <Path
-      d="M8 1C5.2 1 3 3.2 3 6C3 9.5 8 15 8 15C8 15 13 9.5 13 6C13 3.2 10.8 1 8 1ZM8 8C7.1 8 6.3 7.3 6.3 6.3C6.3 5.3 7.1 4.5 8 4.5C8.9 4.5 9.7 5.3 9.7 6.3C9.7 7.3 8.9 8 8 8Z"
-      fill="#A6FF00"
+      d="M5.95837 8.66671C6.2106 8.66719 6.45945 8.60897 6.68528 8.49662L7.76862 7.95496C8.32079 7.68079 8.6691 7.11653 8.66671 6.50005V4.89292C8.66862 4.27697 8.32036 3.71345 7.76862 3.43964L6.68528 2.89798C6.22756 2.67048 5.68971 2.67048 5.23199 2.89798L4.14865 3.43964C3.59671 3.7133 3.24823 4.27687 3.25003 4.89292V6.50005C3.24805 7.11615 3.59628 7.67988 4.14812 7.95389L5.23146 8.49555C5.45718 8.60826 5.70606 8.66686 5.95837 8.66671ZM4.33337 6.50005V4.89292C4.33423 4.83767 4.34355 4.78286 4.36099 4.73042L5.54184 5.32083C5.80407 5.4519 6.11269 5.4519 6.37493 5.32083L7.55577 4.73042C7.57321 4.78286 7.58253 4.83767 7.5834 4.89292V6.50005C7.58426 6.70556 7.46805 6.89365 7.28386 6.98483L6.20052 7.52649C6.04777 7.60208 5.86849 7.60208 5.71574 7.52649L4.6324 6.98483C4.44839 6.8935 4.33241 6.70546 4.33337 6.50005ZM9.75003 11.9167H8.28265L10.1714 10.1715C12.4984 7.84461 12.4984 4.07202 10.1716 1.7451C7.84472 -0.581828 4.07215 -0.581853 1.74523 1.74497C-0.581696 4.07179 -0.581747 7.84443 1.7451 10.1713C1.7502 10.1764 3.63409 11.9167 3.63409 11.9167H2.16671C1.86756 11.9167 1.62505 12.1592 1.62505 12.4584C1.62505 12.7575 1.86756 13 2.16671 13H9.75005C10.0492 13 10.2917 12.7575 10.2917 12.4584C10.2917 12.1592 10.0492 11.9167 9.75003 11.9167ZM2.51121 2.51121C4.41084 0.603051 7.49765 0.596145 9.40581 2.49577C11.314 4.3954 11.3209 7.48221 9.42124 9.39037L7.26271 11.3842C6.52598 12.0786 5.37451 12.0746 4.64268 11.375L2.51121 9.40552C0.610343 7.50049 0.610368 4.41627 2.51121 2.51121Z"
+      fill="#E8F1F2"
     />
   </Svg>
 );
 
 const PersonInfoIcon = () => (
-  <Svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+  <Svg width="13" height="13" viewBox="0 0 13 13" fill="none">
     <Path
-      d="M8 8C9.7 8 11 6.7 11 5C11 3.3 9.7 2 8 2C6.3 2 5 3.3 5 5C5 6.7 6.3 8 8 8ZM8 9C6 9 2 10.1 2 12V13H14V12C14 10.1 10 9 8 9Z"
-      fill="#A6FF00"
+      d="M6.5 6.49994C7.14279 6.49994 7.77114 6.30933 8.3056 5.95222C8.84006 5.5951 9.25662 5.08752 9.50261 4.49366C9.74859 3.8998 9.81295 3.24634 9.68755 2.6159C9.56215 1.98546 9.25262 1.40636 8.7981 0.951843C8.34358 0.497323 7.76448 0.18779 7.13404 0.0623883C6.50361 -0.0630137 5.85014 0.00134714 5.25628 0.247332C4.66242 0.493317 4.15484 0.909877 3.79772 1.44434C3.44061 1.9788 3.25 2.60715 3.25 3.24994C3.25086 4.11163 3.59355 4.93778 4.20285 5.54709C4.81216 6.15639 5.63831 6.49908 6.5 6.49994ZM6.5 1.08327C6.92853 1.08327 7.34743 1.21035 7.70374 1.44842C8.06004 1.6865 8.33775 2.02489 8.50174 2.42079C8.66573 2.8167 8.70864 3.25234 8.62504 3.67264C8.54143 4.09293 8.33508 4.47899 8.03206 4.78201C7.72905 5.08502 7.34299 5.29137 6.9227 5.37498C6.5024 5.45858 6.06676 5.41567 5.67085 5.25168C5.27495 5.08769 4.93656 4.80998 4.69848 4.45368C4.46041 4.09737 4.33333 3.67847 4.33333 3.24994C4.33333 2.6753 4.56161 2.1242 4.96794 1.71788C5.37426 1.31155 5.92536 1.08327 6.5 1.08327V1.08327Z"
+      fill="#E8F1F2"
+    />
+    <Path
+      d="M6.5 7.58368C5.20751 7.58511 3.96837 8.09919 3.05444 9.01312C2.14051 9.92705 1.62643 11.1662 1.625 12.4587C1.625 12.6023 1.68207 12.7401 1.78365 12.8417C1.88523 12.9433 2.02301 13.0003 2.16667 13.0003C2.31033 13.0003 2.4481 12.9433 2.54968 12.8417C2.65126 12.7401 2.70833 12.6023 2.70833 12.4587C2.70833 11.4531 3.10781 10.4886 3.81889 9.77757C4.52996 9.06649 5.49439 8.66701 6.5 8.66701C7.50561 8.66701 8.47004 9.06649 9.18111 9.77757C9.89219 10.4886 10.2917 11.4531 10.2917 12.4587C10.2917 12.6023 10.3487 12.7401 10.4503 12.8417C10.5519 12.9433 10.6897 13.0003 10.8333 13.0003C10.977 13.0003 11.1148 12.9433 11.2164 12.8417C11.3179 12.7401 11.375 12.6023 11.375 12.4587C11.3736 11.1662 10.8595 9.92705 9.94556 9.01312C9.03163 8.09919 7.79249 7.58511 6.5 7.58368V7.58368Z"
+      fill="#E8F1F2"
     />
   </Svg>
 );
@@ -531,44 +535,53 @@ const PersonInfoIcon = () => (
 const ClockIcon = () => (
   <Svg width="16" height="16" viewBox="0 0 16 16" fill="none">
     <Path
-      d="M8 1C4.1 1 1 4.1 1 8C1 11.9 4.1 15 8 15C11.9 15 15 11.9 15 8C15 4.1 11.9 1 8 1ZM8 14C4.7 14 2 11.3 2 8C2 4.7 4.7 2 8 2C11.3 2 14 4.7 14 8C14 11.3 11.3 14 8 14ZM8.5 4H7V9L11.2 11.2L12 10L8.5 8.2V4Z"
-      fill="#A6FF00"
+      d="M8 0C6.41775 0 4.87103 0.469192 3.55544 1.34824C2.23985 2.22729 1.21447 3.47672 0.608967 4.93853C0.00346629 6.40034 -0.15496 8.00888 0.153721 9.56072C0.462403 11.1126 1.22433 12.538 2.34315 13.6569C3.46197 14.7757 4.88743 15.5376 6.43928 15.8463C7.99113 16.155 9.59966 15.9965 11.0615 15.391C12.5233 14.7855 13.7727 13.7602 14.6518 12.4446C15.5308 11.129 16 9.58225 16 8C15.9977 5.87897 15.1541 3.84547 13.6543 2.34568C12.1545 0.845886 10.121 0.00229405 8 0V0ZM8 14.6667C6.68146 14.6667 5.39253 14.2757 4.2962 13.5431C3.19987 12.8106 2.34539 11.7694 1.84081 10.5512C1.33622 9.33305 1.2042 7.99261 1.46144 6.6994C1.71867 5.40619 2.35361 4.21831 3.28596 3.28596C4.21831 2.3536 5.4062 1.71867 6.6994 1.46143C7.99261 1.2042 9.33305 1.33622 10.5512 1.8408C11.7694 2.34539 12.8106 3.19987 13.5431 4.2962C14.2757 5.39253 14.6667 6.68146 14.6667 8C14.6647 9.76752 13.9617 11.4621 12.7119 12.7119C11.4621 13.9617 9.76752 14.6647 8 14.6667V14.6667Z"
+      fill="#E8F1F2"
+    />
+    <Path
+      d="M8.00013 4C7.82332 4 7.65375 4.07024 7.52872 4.19526C7.4037 4.32029 7.33346 4.48985 7.33346 4.66667V7.54999L5.08613 8.95799C4.93584 9.05188 4.829 9.20162 4.78912 9.37428C4.74923 9.54694 4.77957 9.72837 4.87346 9.87866C4.96735 10.0289 5.11709 10.1358 5.28975 10.1757C5.46241 10.2155 5.64384 10.1852 5.79413 10.0913L8.35413 8.49133C8.45085 8.43072 8.53039 8.3463 8.58514 8.24615C8.63989 8.14599 8.668 8.03346 8.66679 7.91933V4.66667C8.66679 4.48985 8.59656 4.32029 8.47153 4.19526C8.34651 4.07024 8.17694 4 8.00013 4Z"
+      fill="#E8F1F2"
     />
   </Svg>
 );
 
 const CalendarIcon = () => (
-  <Svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+  <Svg width="13.5" height="13.5" viewBox="0 0 12 12" fill="none">
     <Path
-      d="M13 2H12V1H10V2H6V1H4V2H3C1.9 2 1 2.9 1 4V13C1 14.1 1.9 15 3 15H13C14.1 15 15 14.1 15 13V4C15 2.9 14.1 2 13 2ZM13 13H3V6H13V13ZM3 4H13V5H3V4Z"
-      fill="#A6FF00"
+      d="M3.375 1.5V2.625M8.625 1.5V2.625M1.5 9.375V3.75C1.5 3.12868 2.00368 2.625 2.625 2.625H9.375C9.99632 2.625 10.5 3.12868 10.5 3.75V9.375M1.5 9.375C1.5 9.99632 2.00368 10.5 2.625 10.5H9.375C9.99632 10.5 10.5 9.99632 10.5 9.375M1.5 9.375V5.625C1.5 5.00368 2.00368 4.5 2.625 4.5H9.375C9.99632 4.5 10.5 5.00368 10.5 5.625V9.375"
+      stroke="#E8F1F2"
+      strokeOpacity="0.7"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     />
   </Svg>
 );
 
 const HandHeartIcon = () => (
-  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <Svg width="19" height="19" viewBox="0 0 19 19" fill="none">
     <Path
-      d="M12 21.35L10.55 20.03C5.4 15.36 2 12.28 2 8.5C2 5.42 4.42 3 7.5 3C9.24 3 10.91 3.81 12 5.09C13.09 3.81 14.76 3 16.5 3C19.58 3 22 5.42 22 8.5C22 12.28 18.6 15.36 13.45 20.04L12 21.35Z"
+      d="M7.09729 19H3.16667C2.32681 19 1.52136 18.6664 0.927495 18.0725C0.33363 17.4786 0 16.6732 0 15.8333V11.875C0 11.0351 0.33363 10.2297 0.927495 9.63583C1.52136 9.04196 2.32681 8.70833 3.16667 8.70833H10.1785C10.6069 8.70854 11.0281 8.81933 11.4011 9.03001C11.7742 9.24068 12.0866 9.54409 12.308 9.91088L14.8548 7.11233C15.0655 6.88068 15.3197 6.69282 15.603 6.55948C15.8863 6.42614 16.1931 6.34994 16.5059 6.33524C16.8187 6.32053 17.1313 6.36761 17.4258 6.47378C17.7204 6.57995 17.9911 6.74314 18.2226 6.954C18.6844 7.37828 18.9612 7.96693 18.9933 8.59324C19.0254 9.21955 18.8104 9.83344 18.3944 10.3028L13.011 16.3487C12.2678 17.1823 11.3567 17.8495 10.3375 18.3064C9.31838 18.7633 8.21418 18.9997 7.09729 19ZM3.16667 10.2917C2.74674 10.2917 2.34401 10.4585 2.04708 10.7554C1.75015 11.0523 1.58333 11.4551 1.58333 11.875V15.8333C1.58333 16.2533 1.75015 16.656 2.04708 16.9529C2.34401 17.2499 2.74674 17.4167 3.16667 17.4167H7.09729C7.99023 17.4163 8.87301 17.2273 9.68778 16.8619C10.5026 16.4965 11.2309 15.9631 11.8251 15.2966L17.2124 9.24983C17.3523 9.09228 17.4247 8.8861 17.414 8.6757C17.4034 8.46529 17.3105 8.26748 17.1554 8.12488C16.9977 7.98311 16.791 7.90841 16.5791 7.91667C16.474 7.92111 16.3709 7.94643 16.2758 7.99115C16.1807 8.03587 16.0954 8.09909 16.0249 8.17713L12.521 12.0333C12.3672 12.4591 12.1006 12.835 11.7498 13.1212C11.399 13.4073 10.9771 13.5927 10.5292 13.6578L6.44338 14.2421C6.23551 14.2719 6.02432 14.2179 5.85625 14.092C5.68819 13.9661 5.57702 13.7786 5.54721 13.5708C5.51739 13.3629 5.57137 13.1517 5.69727 12.9836C5.82317 12.8156 6.01068 12.7044 6.21854 12.6746L10.3051 12.0911C10.532 12.0594 10.7383 11.9428 10.8825 11.7648C11.0266 11.5868 11.0979 11.3607 11.0818 11.1323C11.0657 10.9038 10.9635 10.6899 10.7958 10.5339C10.6282 10.3779 10.4075 10.2913 10.1785 10.2917H3.16667ZM8.70833 7.18358C8.34952 7.18455 8.00117 7.06275 7.72113 6.83842C6.36579 5.75067 4.75 4.11667 4.75 2.53333C4.73056 1.88287 4.96951 1.25119 5.41459 0.776438C5.85967 0.301691 6.47464 0.0225247 7.125 0C7.71665 0.0023044 8.2843 0.234189 8.70833 0.646792C9.13237 0.234189 9.70002 0.0023044 10.2917 0C10.942 0.0225247 11.557 0.301691 12.0021 0.776438C12.4472 1.25119 12.6861 1.88287 12.6667 2.53333C12.6667 4.11667 11.0509 5.75067 9.69475 6.83921C9.41481 7.06309 9.06678 7.18459 8.70833 7.18358ZM7.125 1.58333C6.8949 1.60642 6.68305 1.71888 6.53501 1.89654C6.38696 2.07419 6.31455 2.30284 6.33333 2.53333C6.33333 3.24583 7.24454 4.42542 8.71308 5.60421C10.1721 4.42542 11.0833 3.24583 11.0833 2.53333C11.1021 2.30284 11.0297 2.07419 10.8817 1.89654C10.7336 1.71888 10.5218 1.60642 10.2917 1.58333C10.0616 1.60642 9.84972 1.71888 9.70168 1.89654C9.55363 2.07419 9.48122 2.30284 9.5 2.53333C9.5 2.7433 9.41659 2.94466 9.26813 3.09313C9.11966 3.24159 8.9183 3.325 8.70833 3.325C8.49837 3.325 8.29701 3.24159 8.14854 3.09313C8.00007 2.94466 7.91667 2.7433 7.91667 2.53333C7.93545 2.30284 7.86304 2.07419 7.71499 1.89654C7.56695 1.71888 7.3551 1.60642 7.125 1.58333Z"
       fill="#001A23"
     />
   </Svg>
 );
 
+// ==========================================
+// ESTILOS
+// ==========================================
+
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: "#001A23",
   },
   topButtonsContainer: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
+    top: Platform.OS === "ios" ? 40 : 50,
+    left: 24,
+    right: 24,
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingHorizontal: 24,
-    paddingTop: Platform.OS === "ios" ? 60 : 40,
     zIndex: 10,
   },
   topGlassButton: {
@@ -581,99 +594,107 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 120,
-    paddingBottom: 140,
+    paddingBottom: 150,
   },
   tagContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
     alignSelf: "flex-start",
     marginLeft: 24,
-    marginBottom: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 15,
+    borderWidth: 0.5,
+    borderColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     overflow: "hidden",
+    marginBottom: 20,
+    gap: 7,
   },
   tagText: {
-    fontSize: 14,
-    fontWeight: "500",
     color: "#FFFFFF",
-    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: "300",
   },
   eventTitle: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    marginHorizontal: 24,
-    marginBottom: 8,
+    color: "#E8F1F2",
+    fontSize: 23,
+    fontWeight: "400",
+    marginLeft: 24,
+    marginBottom: 10,
   },
   eventSubRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginHorizontal: 24,
-    marginBottom: 24,
+    marginLeft: 24,
+    marginBottom: 20,
+    gap: 5,
   },
   eventSubText: {
-    fontSize: 14,
-    color: "#A6FF00",
-    marginLeft: 6,
-    marginRight: 12,
+    color: "#E8F1F2",
+    fontSize: 13,
+    fontWeight: "300",
   },
   descriptionText: {
-    fontSize: 16,
     color: "#E8F1F2",
-    lineHeight: 24,
+    fontSize: 14,
+    fontWeight: "300",
+    lineHeight: 20,
     marginHorizontal: 24,
-    marginBottom: 32,
+    marginBottom: 30,
   },
   sectionContainer: {
     marginHorizontal: 24,
-    marginBottom: 32,
+    marginBottom: 30,
   },
   sectionTitle: {
+    color: "#E8F1F2",
     fontSize: 20,
-    fontWeight: "600",
-    color: "#FFFFFF",
-    marginBottom: 8,
+    fontWeight: "400",
+    marginBottom: 10,
   },
   yellowUnderline: {
-    height: 3,
-    width: 40,
+    width: 84,
+    height: 2,
     backgroundColor: "#EEE82C",
-    borderRadius: 2,
-    marginBottom: 16,
+    marginBottom: 15,
   },
   infoPillsRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: 10,
   },
   glassPill: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 9999,
+    borderWidth: 0.5,
+    borderColor: "rgba(232, 241, 242, 0.25)",
+    backgroundColor: "rgba(232, 241, 242, 0.1)",
     overflow: "hidden",
+    gap: 7,
   },
   glassPillText: {
-    fontSize: 14,
-    fontWeight: "500",
     color: "#FFFFFF",
-    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: "300",
   },
   carouselSection: {
-    marginBottom: 32,
+    marginBottom: 30,
   },
   carouselImageWrapper: {
     width: 310,
-    height: 200,
-    borderRadius: 16,
+    height: 181,
+    borderRadius: 18,
+    borderWidth: 2.7,
+    borderColor: "rgba(0,0,0,0.4)",
     overflow: "hidden",
   },
   carouselImageInactive: {
-    opacity: 0.7,
+    width: 281,
+    height: 164,
+    alignSelf: "center",
   },
   carouselImage: {
     width: "100%",
@@ -682,82 +703,87 @@ const styles = StyleSheet.create({
   },
   pagination: {
     flexDirection: "row",
-    justifyContent: "center",
     alignItems: "center",
-    marginTop: 16,
-    gap: 8,
+    justifyContent: "center",
+    marginTop: 15,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    height: 4,
+    borderRadius: 6,
+    marginHorizontal: 2.5,
   },
   dotActive: {
+    width: 24,
     backgroundColor: "#EEE82C",
   },
   dotInactive: {
-    backgroundColor: "rgba(255, 255, 255, 0.3)",
+    width: 17,
+    backgroundColor: "rgba(232, 241, 242, 0.3)",
   },
   goalsWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: 10,
   },
   guidelineCard: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderRadius: 16,
+    padding: 15,
+    borderRadius: 15,
+    borderWidth: 0.5,
+    borderColor: "rgba(255, 255, 255, 0.25)",
     backgroundColor: "rgba(255, 255, 255, 0.1)",
     overflow: "hidden",
   },
   guidelineText: {
-    fontSize: 16,
     color: "#FFFFFF",
-    lineHeight: 22,
+    fontSize: 14,
+    fontWeight: "300",
+    lineHeight: 20,
   },
   bottomBarWrapper: {
     position: "absolute",
     bottom: 0,
-    left: 0,
-    right: 0,
-    height: 120,
+    width: "100%",
+    height: 186,
+    justifyContent: "flex-end",
+    alignItems: "center",
+    paddingBottom: Platform.OS === "ios" ? 30 : 25,
   },
   bottomGlassContainer: {
-    position: "absolute",
-    bottom: 24,
-    left: 24,
-    right: 24,
-    height: 72,
-    borderRadius: 20,
-    overflow: "hidden",
+    width: 345,
+    height: 63,
+    borderRadius: 999,
+    flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "rgba(0, 44, 59, 0.4)",
+    borderWidth: 0.7,
+    borderColor: "rgba(255, 255, 255, 0.15)",
+    overflow: "hidden",
   },
   participateButton: {
+    width: "97%",
+    height: 55,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#EEE82C",
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderRadius: 16,
-    gap: 12,
-    width: "90%",
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(0, 26, 35, 0.4)",
+    gap: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 0,
+    elevation: 2,
   },
   participateButtonDisabled: {
     backgroundColor: "#A0B3B8",
     opacity: 0.7,
   },
   participateButtonText: {
-    fontSize: 18,
-    fontWeight: "600",
     color: "#001A23",
-  },
-});
-
-// Estilo adicional para o botão de participar quando desabilitado
-const additionalStyles = StyleSheet.create({
-  disabledButton: {
-    backgroundColor: '#A0B3B8',
+    fontSize: 14,
+    fontWeight: "300",
   },
 });
