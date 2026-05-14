@@ -12,6 +12,7 @@ import {
   limit,
   doc,
   getDoc,
+  writeBatch,
   updateDoc,
   deleteDoc
 } from 'firebase/firestore';
@@ -144,6 +145,44 @@ export const participacaoService = {
 // Serviço de ações
 export const acaoService = {
 
+  // Função para mover evento para histórico
+  async moverParaHistorico(eventoId: string) {
+    try {
+      const eventoRef = doc(firestore, 'acoes', eventoId);
+
+      // Pega os dados do evento
+      const eventoSnap = await getDoc(eventoRef);
+
+      if (!eventoSnap.exists()) {
+        throw new Error('Evento não encontrado');
+      }
+
+      const dadosEvento = eventoSnap.data();
+
+      // Referência da nova coleção
+      const historicoRef = doc(collection(firestore, 'historico'));
+
+      // Cria batch
+      const batch = writeBatch(firestore);
+
+      // Adiciona no histórico
+      batch.set(historicoRef, {
+        ...dadosEvento,
+        movidoEm: new Date(),
+      });
+
+      // Remove de eventos
+      batch.delete(eventoRef);
+
+      // Executa tudo junto
+      await batch.commit();
+
+      console.log('Evento movido para histórico!');
+    } catch (error) {
+      console.error('Erro ao mover evento:', error);
+    }
+  },
+
   // Criar nova ação
   async criarAcao(acao: Omit<Acao, 'id' | 'createdAt'>): Promise<string> {
     try {
@@ -198,7 +237,11 @@ export const acaoService = {
         descricao: info?.descricao || '',
         cidade: info?.cidade || '',
         estado: info?.estado || '',
-        data: info?.data?.toDate() || new Date(),
+        data: info?.data instanceof Date
+            ? info.data
+            : info?.data?.toDate
+            ? info.data.toDate()
+            : new Date(info.data),
         horaInicio: info?.horaInicio || '',
         horaFim: info?.horaFim || '',
         voluntariosNecessarios: info?.voluntariosNecessarios || 0,

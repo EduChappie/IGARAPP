@@ -111,22 +111,42 @@ export default function HomeUserScreen() {
       showErrorAlert('Ação inválida. Tente novamente.');
       return;
     }
-  
+
     try {
       setLoadingFinalizar(true);
-  
+
       await acaoService.editarAcao(acaoSelecionada.id, {
         lixoRecolhido: lixoRecolhido.trim(),
         metasConcluidas,
       });
-  
+
+      // função de mover a coleção e deletar depois
+      acaoService.moverParaHistorico(acaoSelecionada?.id);
+
       showSuccessAlert('Ação finalizada com sucesso!');
       fecharModal();
+
     } catch (error) {
       showErrorAlert('Não foi possível finalizar a ação. Tente novamente.');
     } finally {
       setLoadingFinalizar(false);
     }
+  
+    // try { esse código antigo serve para editar o item na coleção, mas não funciona mais assim
+    //   setLoadingFinalizar(true);
+  
+    //   await acaoService.editarAcao(acaoSelecionada.id, {
+    //     lixoRecolhido: lixoRecolhido.trim(),
+    //     metasConcluidas,
+    //   });
+  
+    //   showSuccessAlert('Ação finalizada com sucesso!');
+    //   fecharModal();
+    // } catch (error) {
+    //   showErrorAlert('Não foi possível finalizar a ação. Tente novamente.');
+    // } finally {
+    //   setLoadingFinalizar(false);
+    // }
   };
 
   const toggleMeta = (index: number) => {
