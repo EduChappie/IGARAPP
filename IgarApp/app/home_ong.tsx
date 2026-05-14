@@ -1,5 +1,5 @@
 import { useAuth } from "@/src/contexts/AuthContext";
-import { acaoService, Acao, showSuccessAlert, showErrorAlert } from "@/src/services/firebase/firestoreService";
+import { acaoService, participacaoService, Acao, VoluntarioPresenca, showSuccessAlert, showErrorAlert } from "@/src/services/firebase/firestoreService";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
@@ -39,17 +39,6 @@ import Svg, {
 
 const { width, height } = Dimensions.get("window");
 
-// ==========================================
-// MOCK DE VOLUNTÁRIOS (lista de presença)
-// ==========================================
-const VOLUNTARIOS_MOCK = [
-  { id: "1", nome: "Ana Silva", status: "Presente" },
-  { id: "2", nome: "Bruno Costa", status: "Presente" },
-  { id: "3", nome: "Carla Mendes", status: "Ausente" },
-  { id: "4", nome: "Diego Souza", status: "Presente" },
-  { id: "5", nome: "Elisa Ramos", status: "Ausente" },
-];
-
 export default function HomeUserScreen() {
   const router = useRouter();
   const { user } = useAuth();
@@ -82,12 +71,18 @@ export default function HomeUserScreen() {
   const [buscaVoluntario, setBuscaVoluntario] = useState("");
   const [loadingFinalizar, setLoadingFinalizar] = useState(false);
 
+  // ==========================================
+  // ESTADO DOS VOLUNTÁRIOS (substituiu o mock)
+  // ==========================================
+  const [voluntarios, setVoluntarios] = useState<VoluntarioPresenca[]>([]);
+  const [loadingVoluntarios, setLoadingVoluntarios] = useState(false);
+
   const abrirModalFinalizar = (cardData: any, acaoOriginal: Acao) => {
-    // Passa o cardData para exibição + as metas da ação original do Firestore
     setAcaoSelecionada({ ...cardData, metas: acaoOriginal.metas });
     setLixoRecolhido("");
     setMetasConcluidas([]);
     setBuscaVoluntario("");
+    setVoluntarios([]);
     setModalVisible(true);
   };
 
@@ -96,15 +91,25 @@ export default function HomeUserScreen() {
     setTimeout(() => setAcaoSelecionada(null), 300);
   };
 
+  // Popula campos já salvos e carrega voluntários ao abrir o modal
   useEffect(() => {
-  if (!modalVisible || !acaoSelecionada?.id) return;
- 
-  acaoService.getAcaoById(acaoSelecionada.id).then((acao) => {
-    if (!acao) return;
-    setLixoRecolhido(acao.lixoRecolhido || '');
-    setMetasConcluidas(acao.metasConcluidas || []);
-  });
-}, [modalVisible, acaoSelecionada?.id]);
+    if (!modalVisible || !acaoSelecionada?.id) return;
+
+    // Carrega dados já salvos na ação
+    acaoService.getAcaoById(acaoSelecionada.id).then((acao) => {
+      if (!acao) return;
+      setLixoRecolhido(acao.lixoRecolhido || '');
+      setMetasConcluidas(acao.metasConcluidas || []);
+    });
+
+    // Carrega voluntários inscritos nessa ação
+    setLoadingVoluntarios(true);
+    participacaoService.getVoluntariosDaAcao(acaoSelecionada.id)
+      .then(setVoluntarios)
+      .catch(() => showErrorAlert('Erro ao carregar lista de voluntários.'))
+      .finally(() => setLoadingVoluntarios(false));
+
+  }, [modalVisible, acaoSelecionada?.id]);
 
   const handleFinalizarAcao = async () => {
     if (!acaoSelecionada?.id) {
@@ -120,18 +125,15 @@ export default function HomeUserScreen() {
         metasConcluidas,
       });
 
-      // função de mover a coleção e deletar depois
       acaoService.moverParaHistorico(acaoSelecionada?.id);
 
       showSuccessAlert('Ação finalizada com sucesso!');
       fecharModal();
-
     } catch (error) {
       showErrorAlert('Não foi possível finalizar a ação. Tente novamente.');
     } finally {
       setLoadingFinalizar(false);
     }
-  
   };
 
   const toggleMeta = (index: number) => {
@@ -142,7 +144,26 @@ export default function HomeUserScreen() {
     }
   };
 
-  const voluntariadosFiltrados = VOLUNTARIOS_MOCK.filter((v) =>
+  // Alterna presença e atualiza estado local sem recarregar tudo
+  const handleTogglePresenca = async (voluntario: VoluntarioPresenca) => {
+    try {
+      const novoStatus = await participacaoService.togglePresenca(
+        voluntario.participacaoId,
+        voluntario.status,
+      );
+      setVoluntarios((prev) =>
+        prev.map((v) =>
+          v.participacaoId === voluntario.participacaoId
+            ? { ...v, status: novoStatus }
+            : v,
+        ),
+      );
+    } catch {
+      showErrorAlert('Erro ao atualizar presença.');
+    }
+  };
+
+  const voluntariadosFiltrados = voluntarios.filter((v) =>
     v.nome.toLowerCase().includes(buscaVoluntario.toLowerCase()),
   );
 
@@ -197,7 +218,6 @@ export default function HomeUserScreen() {
               <ActivityIndicator size="large" color="#91CB3E" style={{ marginTop: 40 }} />
             ) : (
               acoes.map((acao) => {
-                // Adaptador: converte os campos do Firestore para o formato do ProjectCard
                 const cardData = {
                   id: acao.id!,
                   orgName: `${acao.cidade}, ${acao.estado}`,
@@ -373,27 +393,46 @@ export default function HomeUserScreen() {
                     onChangeText={setBuscaVoluntario}
                   />
                 </View>
-                <View style={styles.voluntariosList}>
-                  {voluntariadosFiltrados.map((voluntario) => (
-                    <View key={voluntario.id} style={styles.voluntarioRow}>
-                      <View style={styles.voluntarioInfo}>
-                        <View style={styles.voluntarioAvatar}>
-                          <Text style={styles.voluntarioAvatarText}>
-                            {voluntario.nome.charAt(0)}
+
+                {/* Lista real do Firestore */}
+                {loadingVoluntarios ? (
+                  <ActivityIndicator color="#EEE82C" style={{ marginTop: 16 }} />
+                ) : voluntariadosFiltrados.length === 0 ? (
+                  <Text style={styles.semVoluntariosText}>
+                    Nenhum voluntário inscrito.
+                  </Text>
+                ) : (
+                  <View style={styles.voluntariosList}>
+                    {voluntariadosFiltrados.map((voluntario) => (
+                      <View key={voluntario.participacaoId} style={styles.voluntarioRow}>
+                        <View style={styles.voluntarioInfo}>
+                          <View style={styles.voluntarioAvatar}>
+                            <Text style={styles.voluntarioAvatarText}>
+                              {voluntario.nome.charAt(0).toUpperCase()}
+                            </Text>
+                          </View>
+                          <Text style={styles.voluntarioNome}>
+                            {voluntario.nome}
                           </Text>
                         </View>
-                        <Text style={styles.voluntarioNome}>
-                          {voluntario.nome}
-                        </Text>
+                        <TouchableOpacity
+                          style={[
+                            styles.presencaBtn,
+                            voluntario.status === 'cancelado' && styles.presencaBtnAusente,
+                          ]}
+                          onPress={() => handleTogglePresenca(voluntario)}
+                        >
+                          <Text style={[
+                            styles.presencaBtnText,
+                            voluntario.status === 'cancelado' && styles.presencaBtnTextAusente,
+                          ]}>
+                            {voluntario.status === 'confirmado' ? 'Presente' : 'Ausente'}
+                          </Text>
+                        </TouchableOpacity>
                       </View>
-                      <TouchableOpacity style={styles.presencaBtn}>
-                        <Text style={styles.presencaBtnText}>
-                          {voluntario.status}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
+                    ))}
+                  </View>
+                )}
               </View>
             </ScrollView>
       
@@ -1110,6 +1149,12 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontSize: 14,
   },
+  semVoluntariosText: {
+    color: "rgba(255,255,255,0.4)",
+    fontSize: 14,
+    textAlign: "center",
+    marginTop: 12,
+  },
   voluntariosList: {
     gap: 8,
   },
@@ -1153,10 +1198,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(238, 232, 44, 0.3)",
   },
+  presencaBtnAusente: {
+    backgroundColor: "rgba(255, 80, 80, 0.12)",
+    borderColor: "rgba(255, 80, 80, 0.3)",
+  },
   presencaBtnText: {
     color: "#EEE82C",
     fontSize: 12,
     fontWeight: "500",
+  },
+  presencaBtnTextAusente: {
+    color: "#FF6B6B",
   },
   modalFooter: {
     flexDirection: "row",

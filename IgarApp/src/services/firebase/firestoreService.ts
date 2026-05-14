@@ -12,9 +12,9 @@ import {
   limit,
   doc,
   getDoc,
-  writeBatch,
   updateDoc,
-  deleteDoc
+  deleteDoc,
+  writeBatch
 } from 'firebase/firestore';
 import { Alert } from 'react-native';
 
@@ -26,6 +26,13 @@ export interface Participacao {
   dataInscricao: Date;
   status: 'confirmado' | 'pendente' | 'cancelado';
   createdAt?: any; // Firestore timestamp
+}
+
+export interface VoluntarioPresenca {
+  participacaoId: string;
+  userId: string;
+  nome: string;
+  status: 'confirmado' | 'pendente' | 'cancelado';
 }
 
 export interface Acao {
@@ -140,6 +147,61 @@ export const participacaoService = {
       throw error;
     }
   },
+
+  // Buscar todos os voluntários inscritos em uma ação com nome do usuário
+  async getVoluntariosDaAcao(acaoId: string): Promise<VoluntarioPresenca[]> {
+    try {
+      // 1. Buscar participações da ação
+      const participacoesRef = collection(firestore, 'participacoes');
+      const q = query(participacoesRef, where('acaoId', '==', acaoId));
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) return [];
+
+      // 2. Para cada participação, buscar o nome do usuário em 'users'
+      const voluntarios: VoluntarioPresenca[] = [];
+
+      const promises = snapshot.docs.map(async (participacaoDoc) => {
+        const data = participacaoDoc.data();
+        const userRef = doc(firestore, 'users', data.userId);
+        const userSnap = await getDoc(userRef);
+        const nome = userSnap.exists()
+          ? (userSnap.data()?.nome || userSnap.data()?.razaoSocial || 'Usuário')
+          : 'Usuário';
+
+        voluntarios.push({
+          participacaoId: participacaoDoc.id,
+          userId: data.userId,
+          nome,
+          status: data.status || 'confirmado',
+        });
+      });
+
+      await Promise.all(promises);
+      return voluntarios;
+    } catch (error: any) {
+      console.error('Erro ao buscar voluntários da ação:', error);
+      throw error;
+    }
+  },
+
+  // Alternar presença do voluntário (confirmado ↔ cancelado)
+  async togglePresenca(participacaoId: string, statusAtual: 'confirmado' | 'pendente' | 'cancelado'): Promise<'confirmado' | 'cancelado'> {
+    try {
+      const novoStatus = statusAtual === 'confirmado' ? 'cancelado' : 'confirmado';
+      const participacaoRef = doc(firestore, 'participacoes', participacaoId);
+      await updateDoc(participacaoRef, {
+        status: novoStatus,
+        updatedAt: serverTimestamp(),
+      });
+
+      console.log('Presença atualizada:', participacaoId, novoStatus);
+      return novoStatus;
+    } catch (error: any) {
+      console.error('Erro ao atualizar presença:', error);
+      throw error;
+    }
+  },
 };
 
 // Serviço de ações
@@ -182,6 +244,7 @@ export const acaoService = {
       console.error('Erro ao mover evento:', error);
     }
   },
+
 
   // Criar nova ação
   async criarAcao(acao: Omit<Acao, 'id' | 'createdAt'>): Promise<string> {
@@ -237,11 +300,7 @@ export const acaoService = {
         descricao: info?.descricao || '',
         cidade: info?.cidade || '',
         estado: info?.estado || '',
-        data: info?.data instanceof Date
-            ? info.data
-            : info?.data?.toDate
-            ? info.data.toDate()
-            : new Date(info.data),
+        data: info?.data?.toDate() || new Date(),
         horaInicio: info?.horaInicio || '',
         horaFim: info?.horaFim || '',
         voluntariosNecessarios: info?.voluntariosNecessarios || 0,
