@@ -51,7 +51,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, senha);
-      console.log("Login bem-sucedido:", userCredential.user.uid);
+      // console.log("Login bem-sucedido:", userCredential.user.uid);
 
       // Redireciona para home_user após login bem-sucedido
       setTimeout(() => {

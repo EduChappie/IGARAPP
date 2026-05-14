@@ -165,7 +165,7 @@ export default function HomeUserScreen() {
                   title: acao.titulo,
                   subtitle: `${acao.cidade}, ${acao.estado}`,
                   volunteers: `${acao.voluntariosInscritos} Voluntários`,
-                  date: acao.dataEvento.toLocaleDateString("pt-BR"),
+                  date: acao.data.toLocaleDateString("pt-BR"),
                   time: `${acao.horaInicio} - ${acao.horaFim}`,
                   images: acao.imagens.length > 0
                     ? acao.imagens.map((url) => ({ uri: url }))

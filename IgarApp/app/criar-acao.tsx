@@ -2,6 +2,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   SafeAreaView,
   ScrollView,
@@ -14,6 +15,8 @@ import {
 } from "react-native";
 import Svg, { G, Path, Rect } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
+import { acaoService, showSuccessAlert, showErrorAlert } from "@/src/services/firebase/firestoreService";
+import { useAuth } from "@/src/contexts/AuthContext";
 
 const { width } = Dimensions.get("window");
 
@@ -32,8 +35,11 @@ const NOME_MESES = [
   "Dezembro",
 ];
 
+// TODO: substitua pelo ID real do organizador logado (ex: vindo do contexto de auth)
+
 export default function CriarAcaoScreen() {
   const router = useRouter();
+  const { user } = useAuth();
 
   // Estados dos inputs
   const [titulo, setTitulo] = useState("");
@@ -43,6 +49,7 @@ export default function CriarAcaoScreen() {
   const [horaFim, setHoraFim] = useState("");
   const [voluntarios, setVoluntarios] = useState("");
   const [descricao, setDescricao] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // --- LÓGICA DAS METAS E ORIENTAÇÕES ---
   const [metas, setMetas] = useState<string[]>([]);
@@ -74,6 +81,43 @@ export default function CriarAcaoScreen() {
   const primeiroDiaDoMes = new Date(anoVisualizado, mesVisualizado, 1).getDay();
   const offset = primeiroDiaDoMes === 0 ? 6 : primeiroDiaDoMes - 1;
   const espacosVazios = Array.from({ length: offset }, (_, i) => i);
+
+  // --- FUNÇÃO DE SALVAR ---
+  const handleCriarAcao = async () => {
+    if (!titulo.trim() || !cidade.trim() || !estado.trim() || !horaInicio.trim() || !horaFim.trim()) {
+      showErrorAlert("Preencha todos os campos obrigatórios: título, cidade, estado e horário.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const data = new Date(anoVisualizado, mesVisualizado, selectedDay);
+
+      await acaoService.criarAcao({
+        titulo: titulo.trim(),
+        descricao: descricao.trim(),
+        cidade: cidade.trim(),
+        estado: estado.trim(),
+        data,
+        horaInicio: horaInicio.trim(),
+        horaFim: horaFim.trim(),
+        voluntariosNecessarios: parseInt(voluntarios) || 0,
+        voluntariosInscritos: 0,
+        organizadorId: user?.uid || "ID_ORGANIZADOR",
+        imagens: [],
+        metas,
+        orientacoes: "",
+      });
+
+      showSuccessAlert("Ação criada com sucesso!");
+      router.back();
+    } catch (error) {
+      showErrorAlert("Não foi possível criar a ação. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.mainContainer}>
@@ -369,10 +413,15 @@ export default function CriarAcaoScreen() {
 
           {/* BOTÃO CRIAR AÇÃO */}
           <TouchableOpacity
-            style={styles.saveButton}
-            onPress={() => router.back()}
+            style={[styles.saveButton, loading && { opacity: 0.7 }]}
+            onPress={handleCriarAcao}
+            disabled={loading}
           >
-            <Text style={styles.saveButtonText}>Criar Ação</Text>
+            {loading ? (
+              <ActivityIndicator color="#001A23" />
+            ) : (
+              <Text style={styles.saveButtonText}>Criar Ação</Text>
+            )}
           </TouchableOpacity>
         </SafeAreaView>
       </ScrollView>
@@ -607,7 +656,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   dayText: { color: "#E8F1F2", fontSize: 16, fontWeight: "300" },
-  daySelected: { backgroundColor: "#EEE82C" }, // BOLINHA VERDE ÚNICA
+  daySelected: { backgroundColor: "#EEE82C" },
 
   // ESTILOS DAS METAS E ORIENTAÇÕES
   metaInputRow: { flexDirection: "row", alignItems: "center", gap: 10 },

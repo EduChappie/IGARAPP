@@ -1,8 +1,9 @@
 // Serviço para operações do Firestore do IgarApp usando Firebase v9 modular API
-
+import { onSnapshot } from 'firebase/firestore';
 import { firestore, FieldValue, serverTimestamp } from './config';
 import {
   collection,
+  Timestamp,
   addDoc,
   query,
   where,
@@ -32,7 +33,7 @@ export interface Acao {
   descricao: string;
   cidade: string;
   estado: string;
-  dataEvento: Date;
+  data: Date;
   horaInicio: string;
   horaFim: string;
   voluntariosNecessarios: number;
@@ -140,6 +141,28 @@ export const participacaoService = {
 
 // Serviço de ações
 export const acaoService = {
+
+  // Criar nova ação
+  async criarAcao(acao: Omit<Acao, 'id' | 'createdAt'>): Promise<string> {
+    try {
+      const acoesRef = collection(firestore, 'acoes');
+      const docRef = await addDoc(acoesRef, {
+        ...acao,
+
+        // Converte Date para Timestamp do Firebase
+        data: Timestamp.fromDate(new Date(acao.data)),
+
+        createdAt: serverTimestamp(),
+      });
+
+      console.log('Ação criada com sucesso:', docRef.id);
+      return docRef.id;
+    } catch (error: any) {
+      console.error('Erro ao criar ação:', error);
+      throw error;
+    }
+  },
+
   // Buscar ação por ID
   async getAcaoById(acaoId: string): Promise<Acao | null> {
     try {
@@ -150,23 +173,23 @@ export const acaoService = {
         return null;
       }
 
-      const data = acaoDoc.data();
+      const info = acaoDoc.data();
       return {
         id: acaoDoc.id,
-        titulo: data?.titulo || '',
-        descricao: data?.descricao || '',
-        cidade: data?.cidade || '',
-        estado: data?.estado || '',
-        dataEvento: data?.dataEvento?.toDate() || new Date(),
-        horaInicio: data?.horaInicio || '',
-        horaFim: data?.horaFim || '',
-        voluntariosNecessarios: data?.voluntariosNecessarios || 0,
-        voluntariosInscritos: data?.voluntariosInscritos || 0,
-        organizadorId: data?.organizadorId || '',
-        imagens: data?.imagens || [],
-        metas: data?.metas || [],
-        orientacoes: data?.orientacoes || '',
-        createdAt: data?.createdAt,
+        titulo: info?.titulo || '',
+        descricao: info?.descricao || '',
+        cidade: info?.cidade || '',
+        estado: info?.estado || '',
+        data: info?.data?.toDate() || new Date(),
+        horaInicio: info?.horaInicio || '',
+        horaFim: info?.horaFim || '',
+        voluntariosNecessarios: info?.voluntariosNecessarios || 0,
+        voluntariosInscritos: info?.voluntariosInscritos || 0,
+        organizadorId: info?.organizadorId || '',
+        imagens: info?.imagens || [],
+        metas: info?.metas || [],
+        orientacoes: info?.orientacoes || '',
+        createdAt: info?.createdAt,
       };
     } catch (error: any) {
       console.error('Erro ao buscar ação:', error);
@@ -197,7 +220,7 @@ export const acaoService = {
             descricao: data?.descricao || '',
             cidade: data?.cidade || '',
             estado: data?.estado || '',
-            dataEvento: data?.dataEvento?.toDate() || new Date(),
+            data: data?.data?.toDate() || new Date(),
             horaInicio: data?.horaInicio || '',
             horaFim: data?.horaFim || '',
             voluntariosNecessarios: data?.voluntariosNecessarios || 0,
@@ -236,23 +259,27 @@ export const acaoService = {
       const acoes: Acao[] = [];
 
       snapshot.forEach((doc) => {
-        const data = doc.data();
+        const info = doc.data();
         acoes.push({
           id: doc.id,
-          titulo: data?.titulo || '',
-          descricao: data?.descricao || '',
-          cidade: data?.cidade || '',
-          estado: data?.estado || '',
-          dataEvento: data?.dataEvento?.toDate() || new Date(),
-          horaInicio: data?.horaInicio || '',
-          horaFim: data?.horaFim || '',
-          voluntariosNecessarios: data?.voluntariosNecessarios || 0,
-          voluntariosInscritos: data?.voluntariosInscritos || 0,
-          organizadorId: data?.organizadorId || '',
-          imagens: data?.imagens || [],
-          metas: data?.metas || [],
-          orientacoes: data?.orientacoes || '',
-          createdAt: data?.createdAt,
+          titulo: info?.titulo || '',
+          descricao: info?.descricao || '',
+          cidade: info?.cidade || '',
+          estado: info?.estado || '',
+          data: info?.data instanceof Date
+            ? info.data
+            : info?.data?.toDate
+            ? info.data.toDate()
+            : new Date(info.data),
+          horaInicio: info?.horaInicio || '',
+          horaFim: info?.horaFim || '',
+          voluntariosNecessarios: info?.voluntariosNecessarios || 0,
+          voluntariosInscritos: info?.voluntariosInscritos || 0,
+          organizadorId: info?.organizadorId || '',
+          imagens: info?.imagens || [],
+          metas: info?.metas || [],
+          orientacoes: info?.orientacoes || '',
+          createdAt: info?.createdAt,
         });
       });
 
