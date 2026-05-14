@@ -24,7 +24,8 @@ export default function RootLayout() {
     "/home_ong",
     "/perfil_pf",
     "/historico",
-    "/pesquisa"
+    "/pesquisa",
+    "/criar-acao"
   ];
 
   const mostrarNavbar = rotasComNavbar.includes(pathname);

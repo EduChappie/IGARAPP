@@ -132,21 +132,6 @@ export default function HomeUserScreen() {
       setLoadingFinalizar(false);
     }
   
-    // try { esse código antigo serve para editar o item na coleção, mas não funciona mais assim
-    //   setLoadingFinalizar(true);
-  
-    //   await acaoService.editarAcao(acaoSelecionada.id, {
-    //     lixoRecolhido: lixoRecolhido.trim(),
-    //     metasConcluidas,
-    //   });
-  
-    //   showSuccessAlert('Ação finalizada com sucesso!');
-    //   fecharModal();
-    // } catch (error) {
-    //   showErrorAlert('Não foi possível finalizar a ação. Tente novamente.');
-    // } finally {
-    //   setLoadingFinalizar(false);
-    // }
   };
 
   const toggleMeta = (index: number) => {
