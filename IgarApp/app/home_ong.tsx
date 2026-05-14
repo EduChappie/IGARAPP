@@ -216,7 +216,7 @@ export default function HomeUserScreen() {
                     key={cardData.id}
                     data={cardData}
                     onPressCard={() => abrirModalFinalizar(cardData, acao)}
-                    onPressEditar={() => router.push(`../editar-acao?id=${acao.id}`)}
+                    onPressEditar={() => router.push(`./editar_acao?id=${acao.id}`)}
                   />
                 );
               })

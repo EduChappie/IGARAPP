@@ -119,7 +119,7 @@ export default function ConfirmarCodigoScreen() {
             </View>
 
             <View style={styles.navigationRow}>
-              {/* BOTAO DE VOLTAR */}
+              {/* BOTAO DE VOLTAR ABSOLUTO À ESQUERDA */}
               <TouchableOpacity
                 style={styles.iconButton}
                 onPress={() => router.back()}
@@ -209,98 +209,6 @@ export default function ConfirmarCodigoScreen() {
               </TouchableOpacity>
 
               <Text style={styles.subtitleTitle}>Confirmar código</Text>
-
-              {/* BOTAO DE FECHAR (X) */}
-              <TouchableOpacity
-                style={styles.iconButton}
-                onPress={() => router.push("../login_pl")}
-                activeOpacity={0.7}
-              >
-                <View
-                  style={{
-                    ...StyleSheet.absoluteFillObject,
-                    backgroundColor: "rgba(0, 44, 59, 0.4)",
-                  }}
-                />
-                <Svg width="44" height="44" viewBox="0 0 44 44" fill="none">
-                  <Rect
-                    x="0.35"
-                    y="0.35"
-                    width="43.3"
-                    height="43.3"
-                    rx="14.65"
-                    stroke="white"
-                    strokeOpacity="0.15"
-                    strokeWidth="0.7"
-                  />
-                  <G filter="url(#filter1_i_361_4879_close)">
-                    <Rect
-                      x="2.5"
-                      y="2.5"
-                      width="39"
-                      height="39"
-                      rx="15"
-                      fill="#EEE82C"
-                    />
-                    <Rect
-                      x="3"
-                      y="3"
-                      width="38"
-                      height="38"
-                      rx="14.5"
-                      stroke="#001A23"
-                      strokeOpacity="0.4"
-                    />
-                    <Path
-                      d="M16 28L28 16M16 16L28 28"
-                      stroke="#001A23"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </G>
-                  <Defs>
-                    <Filter
-                      id="filter1_i_361_4879_close"
-                      x="2.5"
-                      y="2.5"
-                      width="39"
-                      height="39"
-                      filterUnits="userSpaceOnUse"
-                    >
-                      <FeFlood floodOpacity="0" result="BackgroundImageFix" />
-                      <FeBlend
-                        mode="normal"
-                        in="SourceGraphic"
-                        in2="BackgroundImageFix"
-                        result="shape"
-                      />
-                      <FeColorMatrix
-                        in="SourceAlpha"
-                        type="matrix"
-                        values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-                        result="hardAlpha"
-                      />
-                      <FeOffset dy="-3" />
-                      <FeComposite
-                        in2="hardAlpha"
-                        operator="arithmetic"
-                        k2="-1"
-                        k3="1"
-                      />
-                      <FeColorMatrix
-                        type="matrix"
-                        values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"
-                      />
-                      <FeBlend
-                        mode="normal"
-                        in2="shape"
-                        result="effect1_innerShadow_361_4879_close"
-                      />
-                    </Filter>
-                  </Defs>
-                </Svg>
-              </TouchableOpacity>
             </View>
 
             <View style={styles.otpContainer}>
@@ -413,9 +321,10 @@ const styles = StyleSheet.create({
   navigationRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center", // Garante que o texto fique sempre no centro
     marginBottom: 30,
-    paddingHorizontal: 10,
+    position: "relative",
+    height: 44, // Dá ao container a mesma altura do botão para alinhar corretamente
   },
   iconButton: {
     width: 44,
@@ -424,6 +333,9 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     justifyContent: "center",
     alignItems: "center",
+    position: "absolute", // Tira o botão do fluxo normal
+    left: 0, // Fixa o botão exatamente no lado esquerdo da tela
+    zIndex: 10,
   },
   subtitleTitle: {
     fontSize: 24,

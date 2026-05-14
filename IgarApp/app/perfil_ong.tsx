@@ -1,10 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
   Image,
   ImageBackground,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -13,9 +14,17 @@ import {
   View,
 } from "react-native";
 import Svg, { Circle, G, Path, Rect } from "react-native-svg";
+// IMPORT DO CONTEXTO DE AUTENTICAÇÃO
+import { useAuth } from "@/src/contexts/AuthContext";
 
 export default function PerfilOngScreen() {
   const router = useRouter();
+
+  // PUXANDO A FUNÇÃO DE LOGOUT DO SEU BACKEND
+  const { signOut } = useAuth();
+
+  // Controle de visibilidade do Modal
+  const [isLogoutModalVisible, setLogoutModalVisible] = useState(false);
 
   // --- NAVEGAÇÃO DE TELAS (Push) ---
   const handleNav = (rota: string) => {
@@ -170,8 +179,66 @@ export default function PerfilOngScreen() {
               ))}
             </ScrollView>
           </View>
+
+          {/* BOTAO DE LOGOUT (ABRE O MODAL) */}
+          <TouchableOpacity 
+            style={styles.logoutButton} 
+            activeOpacity={0.7} 
+            onPress={() => setLogoutModalVisible(true)}
+          >
+            <Ionicons name="log-out-outline" size={20} color="#FF3B30" style={{ marginRight: 8 }} />
+            <Text style={styles.logoutButtonText}>Sair da conta</Text>
+          </TouchableOpacity>
+
         </ScrollView>
       </LinearGradient>
+
+      {/* MODAL PERSONALIZADO DE LOGOUT */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isLogoutModalVisible}
+        onRequestClose={() => setLogoutModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalIconContainer}>
+              <Ionicons name="log-out-outline" size={32} color="#FF3B30" />
+            </View>
+            <Text style={styles.modalTitle}>Sair da conta</Text>
+            <Text style={styles.modalText}>Tem certeza que deseja sair do IgarApp?</Text>
+            
+            <View style={styles.modalButtonsRow}>
+              {/* Botão Cancelar */}
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                activeOpacity={0.7}
+                onPress={() => setLogoutModalVisible(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+
+              {/* Botão Sair - AGORA COM A FUNÇÃO DO FIREBASE */}
+              <TouchableOpacity
+                style={styles.modalConfirmButton}
+                activeOpacity={0.7}
+                onPress={async () => {
+                  try {
+                    setLogoutModalVisible(false); // Fecha o modal primeiro
+                    await signOut();              // Desloga no Firebase
+                    router.replace("/login_pl");  // Vai pra tela de login
+                  } catch (error) {
+                    console.error("Falha ao deslogar:", error);
+                  }
+                }}
+              >
+                <Text style={styles.modalConfirmText}>Sair</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -337,5 +404,95 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginLeft: 4,
     fontWeight: "bold",
+  },
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginHorizontal: 24,
+    marginTop: 35,
+    height: 55,
+    borderRadius: 16,
+    backgroundColor: "rgba(255, 59, 48, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 59, 48, 0.3)",
+  },
+  logoutButtonText: {
+    color: "#FF3B30",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  
+  // ESTILOS DO MODAL
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 26, 35, 0.8)", 
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  modalContent: {
+    backgroundColor: "#002C3B",
+    width: "100%",
+    borderRadius: 24,
+    padding: 24,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+  },
+  modalIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "rgba(255, 59, 48, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#E8F1F2",
+    marginBottom: 8,
+  },
+  modalText: {
+    fontSize: 14,
+    color: "rgba(232, 241, 242, 0.7)",
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  modalButtonsRow: {
+    flexDirection: "row",
+    width: "100%",
+    gap: 12,
+  },
+  modalCancelButton: {
+    flex: 1,
+    height: 50,
+    borderRadius: 14,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalCancelText: {
+    color: "#E8F1F2",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  modalConfirmButton: {
+    flex: 1,
+    height: 50,
+    borderRadius: 14,
+    backgroundColor: "rgba(255, 59, 48, 0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 59, 48, 0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalConfirmText: {
+    color: "#FF3B30",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

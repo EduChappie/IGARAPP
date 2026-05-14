@@ -2,7 +2,7 @@ import { extra, styles } from "@/styles/_style";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { use, useState } from "react";
+import React, { useState } from "react";
 import {
   Image,
   StyleSheet,
@@ -51,6 +51,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, senha);
+      
       // console.log("Login bem-sucedido:", userCredential.user.uid);
 
       // Redireciona para home_user após login bem-sucedido

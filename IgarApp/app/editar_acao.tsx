@@ -1,7 +1,8 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import React, { useState, useEffect } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   SafeAreaView,
   ScrollView,
@@ -14,6 +15,7 @@ import {
 } from "react-native";
 import Svg, { G, Path, Rect } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
+import { acaoService } from "@/src/services/firebase/firestoreService";
 
 const { width } = Dimensions.get("window");
 
@@ -34,24 +36,23 @@ const NOME_MESES = [
 
 export default function EditarAcaoScreen() {
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
 
-  // Estados dos inputs (pré-preenchidos para simular a edição)
-  const [titulo, setTitulo] = useState("Igarapé do Mindú");
-  const [cidade, setCidade] = useState("Manaus");
-  const [estado, setEstado] = useState("Amazonas");
-  const [horaInicio, setHoraInicio] = useState("14:25");
-  const [horaFim, setHoraFim] = useState("17:00");
-  const [voluntarios, setVoluntarios] = useState("25");
+  // --- LOADING E ERRO ---
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
 
-  const [descricao, setDescricao] = useState(
-    "Ação voltada para a limpeza das margens do igarapé, focando na retirada de plásticos e conscientização da comunidade local.",
-  );
+  // Estados dos inputs
+  const [titulo, setTitulo] = useState("");
+  const [cidade, setCidade] = useState("");
+  const [estado, setEstado] = useState("");
+  const [horaInicio, setHoraInicio] = useState("");
+  const [horaFim, setHoraFim] = useState("");
+  const [voluntarios, setVoluntarios] = useState("");
+  const [descricao, setDescricao] = useState("");
 
   // --- LÓGICA DAS METAS E ORIENTAÇÕES ---
-  const [metas, setMetas] = useState<string[]>([
-    "Levar garrafinha de água",
-    "Usar protetor solar",
-  ]);
+  const [metas, setMetas] = useState<string[]>([]);
   const [metaInput, setMetaInput] = useState("");
 
   const adicionarMeta = () => {
@@ -68,17 +69,110 @@ export default function EditarAcaoScreen() {
   };
 
   // --- LÓGICA DINÂMICA DO CALENDÁRIO ---
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 4, 1)); // Iniciando em Maio como no mock
+  const [currentDate, setCurrentDate] = useState(new Date());
   const anoVisualizado = currentDate.getFullYear();
   const mesVisualizado = currentDate.getMonth();
 
-  const [selectedDay, setSelectedDay] = useState(28);
+  const [selectedDay, setSelectedDay] = useState(new Date().getDate());
 
   const diasNoMes = new Date(anoVisualizado, mesVisualizado + 1, 0).getDate();
   const arrayDias = Array.from({ length: diasNoMes }, (_, i) => i + 1);
   const primeiroDiaDoMes = new Date(anoVisualizado, mesVisualizado, 1).getDay();
   const offset = primeiroDiaDoMes === 0 ? 6 : primeiroDiaDoMes - 1;
   const espacosVazios = Array.from({ length: offset }, (_, i) => i);
+
+  // --- CARREGA DADOS DO FIRESTORE ---
+  useEffect(() => {
+    if (!id) {
+      setErro("ID da ação não encontrado.");
+      setCarregando(false);
+      return;
+    }
+
+    const carregarAcao = async () => {
+      try {
+        setCarregando(true);
+        const acao = await acaoService.getAcaoById(id);
+
+        if (!acao) {
+          setErro("Ação não encontrada.");
+          return;
+        }
+
+        setTitulo(acao.titulo || "");
+        setCidade(acao.cidade || "");
+        setEstado(acao.estado || "");
+        setHoraInicio(acao.horaInicio || "");
+        setHoraFim(acao.horaFim || "");
+        setVoluntarios(String(acao.voluntariosNecessarios || ""));
+        setDescricao(acao.descricao || "");
+        setMetas(acao.metas || []);
+
+        const dataAcao = acao.data instanceof Date ? acao.data : new Date(acao.data);
+        setCurrentDate(new Date(dataAcao.getFullYear(), dataAcao.getMonth(), 1));
+        setSelectedDay(dataAcao.getDate());
+      } catch (e) {
+        console.error("Erro ao carregar ação:", e);
+        setErro("Erro ao carregar os dados da ação.");
+      } finally {
+        setCarregando(false);
+      }
+    };
+
+    carregarAcao();
+  }, [id]);
+
+  // --- SALVAR ALTERAÇÕES ---
+  const handleSalvar = async () => {
+    if (!id) return;
+    try {
+      const dataAtualizada = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth(),
+        selectedDay
+      );
+
+      await acaoService.editarAcao(id, {
+        titulo,
+        cidade,
+        estado,
+        horaInicio,
+        horaFim,
+        voluntariosNecessarios: Number(voluntarios),
+        descricao,
+        metas,
+        data: dataAtualizada,
+      });
+
+      router.back();
+    } catch (e) {
+      console.error("Erro ao salvar:", e);
+    }
+  };
+
+  // --- TELA DE LOADING ---
+  if (carregando) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#012A36", justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#EEE82C" />
+        <Text style={{ color: "#E8F1F2", marginTop: 12, fontWeight: "300" }}>
+          Carregando ação...
+        </Text>
+      </View>
+    );
+  }
+
+  // --- TELA DE ERRO ---
+  if (erro) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#012A36", justifyContent: "center", alignItems: "center", padding: 24 }}>
+        <Text style={{ color: "#E8F1F2", fontSize: 16, textAlign: "center" }}>{erro}</Text>
+        <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 20 }}>
+          <Text style={{ color: "#EEE82C" }}>Voltar</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.mainContainer}>
@@ -360,7 +454,7 @@ export default function EditarAcaoScreen() {
           {/* BOTÃO SALVAR */}
           <TouchableOpacity
             style={styles.saveButton}
-            onPress={() => router.back()}
+            onPress={handleSalvar}
           >
             <Text style={styles.saveButtonText}>Salvar Alterações</Text>
           </TouchableOpacity>
@@ -597,7 +691,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   dayText: { color: "#E8F1F2", fontSize: 16, fontWeight: "300" },
-  daySelected: { backgroundColor: "#EEE82C" }, // BOLINHA VERDE ÚNICA
+  daySelected: { backgroundColor: "#EEE82C" },
 
   // ESTILOS DAS METAS E ORIENTAÇÕES (PÍLULAS)
   metaInputRow: { flexDirection: "row", alignItems: "center", gap: 10 },
@@ -676,7 +770,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  // BOTÃO SALVAR (CRIAR AÇÃO / SALVAR ALTERAÇÕES)
+  // BOTÃO SALVAR
   saveButton: {
     backgroundColor: "#EEE82C",
     height: 55,
