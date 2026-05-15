@@ -106,7 +106,7 @@ export default function CriarAcaoScreen() {
         horaFim: horaFim.trim(),
         voluntariosNecessarios: parseInt(voluntarios) || 0,
         voluntariosInscritos: 0,
-        organizadorId: user?.uid || "ID_ORGANIZADOR",
+        ongId: user?.uid || "ID_ORGANIZADOR",
         imagens: [],
         metas,
         orientacoes: "",

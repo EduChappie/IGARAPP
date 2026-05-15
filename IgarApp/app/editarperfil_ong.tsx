@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,18 +12,50 @@ import {
   View,
 } from "react-native";
 import Svg, { G, Path, Rect } from "react-native-svg";
+import { userService, showSuccessAlert, showErrorAlert } from "@/src/services/firebase/firestoreService";
+import { useAuth } from "@/src/contexts/AuthContext";
 
 export default function EditarPerfilOngScreen() {
   const router = useRouter();
+  const { user } = useAuth();
 
   // Estados dos inputs específicos para ONG
-  const [razaoSocial, setRazaoSocial] = useState("Instituto Salve os Igarapés");
-  const [descricaoOng, setDescricaoOng] = useState("Organização não governamental dedicada à revitalização e conservação dos igarapés...");
-  const [endereco, setEndereco] = useState("Av. Djalma Batista, 1234 - Manaus, AM");
-  const [instagram, setInstagram] = useState("https://instagram.com/salveosigarapes");
+  const [razaoSocial, setRazaoSocial] = useState(user?.razaoSocial ?? "");
+  const [descricaoOng, setDescricaoOng] = useState(user?.bio ?? "");
+  const [endereco, setEndereco] = useState(
+    user?.endereco
+      ? `${user.endereco.rua} - ${user.endereco.numero}, ${user.endereco.cidade}, ${user.endereco.estado}`
+      : ""
+  );
+  const [instagram, setInstagram] = useState(user?.insta ?? "");
+  const [loading, setLoading] = useState(false);
 
   // Controle de foco
   const [focused, setFocused] = useState("");
+
+  async function saveEdit() {
+    if (!user?.uid) {
+      showErrorAlert("Usuário não identificado. Faça login novamente.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await userService.salvarPerfil(user.uid, {
+        razaoSocial: razaoSocial.trim(),
+        bio: descricaoOng.trim(),
+        insta: instagram.trim(),
+      });
+
+      showSuccessAlert("Perfil atualizado com sucesso!");
+      router.back();
+    } catch (error) {
+      showErrorAlert("Não foi possível salvar as alterações. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <LinearGradient
@@ -164,11 +197,18 @@ export default function EditarPerfilOngScreen() {
       {/* BOTÃO SALVAR (Fixo no rodapé) */}
       <View style={styles.footer}>
         <TouchableOpacity
-          style={styles.saveButton}
-          onPress={() => router.back()}
+          style={[styles.saveButton, loading && { opacity: 0.7 }]}
+          onPress={saveEdit}
+          disabled={loading}
         >
-          <Text style={styles.saveButtonText}>Salvar alterações</Text>
-          <Ionicons name="checkmark" size={20} color="#000" />
+          {loading ? (
+            <ActivityIndicator color="#000" />
+          ) : (
+            <>
+              <Text style={styles.saveButtonText}>Salvar alterações</Text>
+              <Ionicons name="checkmark" size={20} color="#000" />
+            </>
+          )}
         </TouchableOpacity>
       </View>
     </LinearGradient>

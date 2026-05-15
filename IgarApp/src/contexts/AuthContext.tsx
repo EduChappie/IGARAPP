@@ -28,6 +28,8 @@ interface User {
   displayName?: string | null;
   photoURL?: string | null;
   tipo?: string;
+  bio?: string;
+  insta?: string;
 
   [key: string]: any;
 }

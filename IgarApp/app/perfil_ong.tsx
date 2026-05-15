@@ -125,7 +125,7 @@ export default function PerfilOngScreen() {
             </View>
 
             <Text style={styles.bioText}>
-              {user?.so}
+              {user?.bio}
             </Text>
 
             {/* Link do Instagram */}
@@ -136,7 +136,7 @@ export default function PerfilOngScreen() {
                 color="#A6FF00"
                 style={{ marginRight: 8 }}
               />
-              <Text style={styles.instagramText}>@salveosigarapes</Text>
+              <Text style={styles.instagramText}>{user?.insta}</Text>
             </TouchableOpacity>
           </View>
 

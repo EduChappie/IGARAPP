@@ -192,7 +192,7 @@ export default function PerfilScreen() {
 
             <Text style={styles.bioText}>
               {user?.bio ||
-                "Apaixonado pela preservação da Amazônia. Trabalhando todos os dias para garantir que nossos igarapés voltem a ser fontes de vida e orgulho para Manaus."}
+                "Sem bio..."}
             </Text>
 
             <TouchableOpacity style={styles.instagramLink} activeOpacity={0.7}>
@@ -203,7 +203,7 @@ export default function PerfilScreen() {
                 style={{ marginRight: 8 }}
               />
               <Text style={styles.instagramText}>
-                {user?.instagram || "@usuario_igarapp"}
+                {user?.insta || "@redes..."}
               </Text>
             </TouchableOpacity>
           </View>

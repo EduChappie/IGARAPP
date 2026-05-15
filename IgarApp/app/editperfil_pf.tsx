@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,23 +12,47 @@ import {
   View,
 } from "react-native";
 import Svg, { G, Path, Rect } from "react-native-svg";
+import { useAuth } from "@/src/contexts/AuthContext";
+import { userService, showSuccessAlert, showErrorAlert } from "@/src/services/firebase/firestoreService";
 
 export default function EditarPerfilScreen() {
   const router = useRouter();
+  const { user } = useAuth();
 
   // Estados dos inputs
-  const [nome, setNome] = useState("Nome do Usuário");
-  const [bio, setBio] = useState("Apaixonado pela preservação da Amazônia...");
-  // Atualizado para receber o link completo
-  const [instagram, setInstagram] = useState(
-    "https://instagram.com/usuario_igarapp",
-  );
+  const [nome, setNome] = useState(user?.nome ?? "");
+  const [bio, setBio] = useState(user?.bio ?? "");
+  const [instagram, setInstagram] = useState(user?.insta ?? "");
+  const [loading, setLoading] = useState(false);
 
   // Controle de foco
   const [focused, setFocused] = useState("");
 
+  async function saveEdit() {
+    if (!user?.uid) {
+      showErrorAlert("Usuário não identificado. Faça login novamente.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await userService.salvarPerfil(user.uid, {
+        nome: nome.trim(),
+        bio: bio.trim(),
+        insta: instagram.trim(),
+      });
+
+      showSuccessAlert("Perfil atualizado com sucesso!");
+      router.back();
+    } catch (error) {
+      showErrorAlert("Não foi possível salvar as alterações. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    /* Colocando o efeito de luz no fundo! */
     <LinearGradient
       colors={["#044A60", "#012A36", "#012A36"]}
       locations={[0, 0.3, 1]}
@@ -35,7 +60,6 @@ export default function EditarPerfilScreen() {
     >
       {/* HEADER */}
       <View style={styles.header}>
-        {/* BOTÃO DE VOLTAR PADRONIZADO (AMARELO + VIDRO) */}
         <TopGlassButton
           onPress={() => router.back()}
           icon={
@@ -52,7 +76,6 @@ export default function EditarPerfilScreen() {
 
         <Text style={styles.headerTitle}>Editar Perfil</Text>
 
-        {/* Espaçador para centralizar o título perfeitamente (44px é a mesma largura do botão acima) */}
         <View style={{ width: 44 }} />
       </View>
 
@@ -116,7 +139,6 @@ export default function EditarPerfilScreen() {
             onBlur={() => setFocused("")}
           />
 
-          {/* INSTAGRAM ATUALIZADO */}
           <Text style={styles.label}>Link do Instagram</Text>
           <View
             style={[
@@ -148,11 +170,18 @@ export default function EditarPerfilScreen() {
       {/* BOTÃO SALVAR (Fixo no rodapé) */}
       <View style={styles.footer}>
         <TouchableOpacity
-          style={styles.saveButton}
-          onPress={() => router.back()}
+          style={[styles.saveButton, loading && { opacity: 0.7 }]}
+          onPress={saveEdit}
+          disabled={loading}
         >
-          <Text style={styles.saveButtonText}>Salvar alterações</Text>
-          <Ionicons name="checkmark" size={20} color="#000" />
+          {loading ? (
+            <ActivityIndicator color="#000" />
+          ) : (
+            <>
+              <Text style={styles.saveButtonText}>Salvar alterações</Text>
+              <Ionicons name="checkmark" size={20} color="#000" />
+            </>
+          )}
         </TouchableOpacity>
       </View>
     </LinearGradient>

@@ -14,7 +14,8 @@ import {
   getDoc,
   updateDoc,
   deleteDoc,
-  writeBatch
+  writeBatch,
+  setDoc
 } from 'firebase/firestore';
 import { Alert } from 'react-native';
 
@@ -24,7 +25,7 @@ export interface Participacao {
   acaoId: string;
   userId: string;
   dataInscricao: Date;
-  status: 'pendente' | 'cancelado' | 'confirmado';
+  status: 'confirmado' | 'pendente' | 'cancelado';
   createdAt?: any; // Firestore timestamp
 }
 
@@ -32,7 +33,7 @@ export interface VoluntarioPresenca {
   participacaoId: string;
   userId: string;
   nome: string;
-  status: 'pendente' | 'cancelado' | 'confirmado';
+  status: 'confirmado' | 'pendente' | 'cancelado';
 }
 
 export interface Acao {
@@ -46,7 +47,7 @@ export interface Acao {
   horaFim: string;
   voluntariosNecessarios: number;
   voluntariosInscritos: number;
-  organizadorId: string;
+  ongId: string;
   imagens: string[];
   metas: string[];
   orientacoes: string;
@@ -64,7 +65,7 @@ export const participacaoService = {
         acaoId,
         userId,
         dataInscricao: new Date(),
-        status: 'pendente',
+        status: 'confirmado',
       };
 
       const participacoesRef = collection(firestore, 'participacoes');
@@ -309,7 +310,7 @@ export const acaoService = {
         horaFim: info?.horaFim || '',
         voluntariosNecessarios: info?.voluntariosNecessarios || 0,
         voluntariosInscritos: info?.voluntariosInscritos || 0,
-        organizadorId: info?.organizadorId || '',
+        ongId: info?.organizadorId || '',
         imagens: info?.imagens || [],
         metas: info?.metas || [],
         orientacoes: info?.orientacoes || '',
@@ -347,15 +348,15 @@ export const acaoService = {
             cidade: data?.cidade || '',
             estado: data?.estado || '',
             data: data?.data instanceof Date
-              ? data.data
-              : data?.data?.toDate
-              ? data.data.toDate()
-              : new Date(data.data),
+            ? data.data
+            : data?.data?.toDate
+            ? data.data.toDate()
+            : new Date(data.data),
             horaInicio: data?.horaInicio || '',
             horaFim: data?.horaFim || '',
             voluntariosNecessarios: data?.voluntariosNecessarios || 0,
             voluntariosInscritos: data?.voluntariosInscritos || 0,
-            organizadorId: data?.organizadorId || '',
+            ongId: data?.organizadorId || '',
             imagens: data?.imagens || [],
             metas: data?.metas || [],
             orientacoes: data?.orientacoes || '',
@@ -407,7 +408,7 @@ export const acaoService = {
           horaFim: info?.horaFim || '',
           voluntariosNecessarios: info?.voluntariosNecessarios || 0,
           voluntariosInscritos: info?.voluntariosInscritos || 0,
-          organizadorId: info?.organizadorId || '',
+          ongId: info?.organizadorId || '',
           imagens: info?.imagens || [],
           metas: info?.metas || [],
           orientacoes: info?.orientacoes || '',
@@ -420,6 +421,61 @@ export const acaoService = {
       return acoes;
     } catch (error: any) {
       console.error('Erro ao buscar ações ativas:', error);
+      throw error;
+    }
+  },
+};
+
+export interface Usuario {
+  id?: string;
+  nome?: string;
+  bio?: string;
+  insta?: string;
+  razaoSocial?: string;
+  createdAt?: any;
+}
+
+// Serviço de usuário
+export const userService = {
+
+  // Salvar perfil: verifica em 'ongs' e 'users', atualiza onde existir
+  async salvarPerfil(userId: string, campos: Partial<Omit<Usuario, 'id' | 'createdAt'>>): Promise<void> {
+    try {
+      // Verifica nas duas coleções, igual ao AuthContext faz no login
+      const ongRef = doc(firestore, 'ongs', userId);
+      const ongSnap = await getDoc(ongRef);
+
+      if (ongSnap.exists()) {
+        // Usuário é uma ONG → atualiza em 'ongs'
+        await updateDoc(ongRef, {
+          ...campos,
+          updatedAt: serverTimestamp(),
+        });
+        console.log('Perfil ONG atualizado:', userId);
+        return;
+      }
+
+      const userRef = doc(firestore, 'users', userId);
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists()) {
+        // Usuário comum → atualiza em 'users'
+        await updateDoc(userRef, {
+          ...campos,
+          updatedAt: serverTimestamp(),
+        });
+        console.log('Perfil user atualizado:', userId);
+        return;
+      }
+
+      // Não existe em nenhuma → cria em 'users'
+      await setDoc(userRef, {
+        ...campos,
+        createdAt: serverTimestamp(),
+      });
+      console.log('Perfil criado em users:', userId);
+    } catch (error: any) {
+      console.error('Erro ao salvar perfil:', error);
       throw error;
     }
   },

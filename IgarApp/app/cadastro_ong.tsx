@@ -141,6 +141,8 @@ export default function CadastroOngScreen() {
           cidade: cidade.trim(),
           estado: estado.trim(),
         },
+        bio: "",
+        insta: "",
         tipo: "ong",
         dataCriacao: serverTimestamp(),
         uid: userId,
