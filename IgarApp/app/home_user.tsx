@@ -37,11 +37,8 @@ const { width } = Dimensions.get("window");
 
 export default function HomeUserScreen() {
   const router = useRouter();
-  const {user} = useAuth();
+  const { user } = useAuth();
 
-  // ==========================================
-  // ESTADO DO FEED (substituiu a constante estática)
-  // ==========================================
   const [acoes, setAcoes] = useState<Acao[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -60,10 +57,12 @@ export default function HomeUserScreen() {
     carregarAcoes();
   }, []);
 
-  // Função para botões normais que empilham tela
-  const handleNav = (rota: string) => {
+  const handleOpenEvento = (acaoId: string) => {
     setTimeout(() => {
-      router.push(rota as any);
+      router.push({
+        pathname: "/detalhes-evento",
+        params: { id: acaoId },
+      } as any);
     }, 50);
   };
 
@@ -73,15 +72,17 @@ export default function HomeUserScreen() {
       locations={[0, 0.3, 1]}
       style={styles.mainContainer}
     >
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      
-      {/* CONTEÚDO PRINCIPAL ROLÁVEL */}
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="transparent"
+        translucent
+      />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}
       >
         <SafeAreaView>
-          {/* HEADER (BOM DIA E LOGO OFICIAL) */}
           <View style={styles.header}>
             <View style={styles.headerTextRow}>
               <View style={styles.headerLogoContainer}>
@@ -89,13 +90,16 @@ export default function HomeUserScreen() {
               </View>
 
               <View>
-                <Text style={styles.greetingText}>Olá, {user?.nome} </Text>
-                <Text style={styles.userNameText}>Pronto pra salvar a amazônia hoje?</Text>
+                <Text style={styles.greetingText}>
+                  Olá, {(user as any)?.nome || user?.displayName || "Usuário"}
+                </Text>
+                <Text style={styles.userNameText}>
+                  Pronto pra salvar a amazônia hoje?
+                </Text>
               </View>
             </View>
           </View>
 
-          {/* BARRA DE PESQUISA */}
           <View style={styles.searchBarContainer}>
             <SearchIcon />
             <TextInput
@@ -105,28 +109,46 @@ export default function HomeUserScreen() {
             />
           </View>
 
-          {/* LISTA DE CARDS (FEED) */}
           <View style={styles.feedContainer}>
             {loading ? (
-              <ActivityIndicator size="large" color="#91CB3E" style={{ marginTop: 40 }} />
+              <ActivityIndicator
+                size="large"
+                color="#91CB3E"
+                style={{ marginTop: 40 }}
+              />
             ) : (
               acoes.map((acao) => {
-                // Adaptador: converte os campos do Firestore para o formato do ProjectCard
+                const dataBruta =
+                  (acao as any).dataEvento || (acao as any).data;
+
+                const dataEvento =
+                  dataBruta instanceof Date
+                    ? dataBruta
+                    : dataBruta?.toDate?.();
+
                 const cardData = {
                   id: acao.id!,
                   orgName: `${acao.cidade}, ${acao.estado}`,
                   title: acao.titulo,
                   subtitle: `${acao.cidade}, ${acao.estado}`,
-                  volunteers: `${acao.voluntariosInscritos} Voluntários`,
-                  date: acao.data.toLocaleDateString("pt-BR"),
+                  volunteers: `${acao.voluntariosInscritos || 0} Voluntários`,
+                  date: dataEvento
+                    ? dataEvento.toLocaleDateString("pt-BR")
+                    : "Data indefinida",
                   time: `${acao.horaInicio} - ${acao.horaFim}`,
-                  // URLs do Firebase Storage viram { uri: url }, fallback para imagem local
-                  images: acao.imagens.length > 0
-                    ? acao.imagens.map((url) => ({ uri: url }))
-                    : [require("../src/assets/image_card_1.png")],
+                  images:
+                    acao.imagens?.length > 0
+                      ? acao.imagens.map((url) => ({ uri: url }))
+                      : [require("../src/assets/image_card_1.png")],
                 };
 
-                return <ProjectCard key={cardData.id} data={cardData} handleNav={handleNav} />;
+                return (
+                  <ProjectCard
+                    key={cardData.id}
+                    data={cardData}
+                    onPress={() => handleOpenEvento(cardData.id)}
+                  />
+                );
               })
             )}
           </View>
@@ -136,15 +158,12 @@ export default function HomeUserScreen() {
   );
 }
 
-// ==========================================
-// COMPONENTE DO CARD COM CARROSSEL ANIMADO
-// ==========================================
 const ProjectCard = ({
   data,
-  handleNav,
+  onPress,
 }: {
   data: any;
-  handleNav: (rota: string) => void;
+  onPress: () => void;
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
@@ -153,6 +172,7 @@ const ProjectCard = ({
   useEffect(() => {
     const interval = setInterval(() => {
       let nextIndex = activeIndexRef.current + 1;
+
       if (nextIndex >= data.images.length) {
         nextIndex = 0;
       }
@@ -167,12 +187,13 @@ const ProjectCard = ({
     }, 3500);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [data.images.length]);
 
   const handleScroll = (event: any) => {
     const slideSize = event.nativeEvent.layoutMeasurement.width;
     const index = event.nativeEvent.contentOffset.x / slideSize;
     const roundIndex = Math.round(index);
+
     if (roundIndex !== activeIndexRef.current) {
       activeIndexRef.current = roundIndex;
       setActiveIndex(roundIndex);
@@ -181,10 +202,8 @@ const ProjectCard = ({
 
   return (
     <View style={styles.cardContainer}>
-      {/* CABEÇALHO DO CARD */}
       <View style={styles.cardHeader}>
         <View style={styles.orgInfo}>
-          {/* AVATAR DO Igarapé */}
           <View style={styles.avatarContainer}>
             <Image
               source={require("../src/assets/globo.png")}
@@ -198,13 +217,11 @@ const ProjectCard = ({
         </View>
       </View>
 
-      {/* CORPO DO CARD VERDE (AGORA CLICÁVEL COM ROTA) */}
       <TouchableOpacity
         activeOpacity={0.9}
-        onPress={() => handleNav("/detalhes-evento")}
+        onPress={onPress}
         style={styles.cardBody}
       >
-        {/* CARROSSEL DE IMAGENS */}
         <View style={styles.carouselContainer}>
           <FlatList
             ref={flatListRef}
@@ -223,7 +240,6 @@ const ProjectCard = ({
           />
         </View>
 
-        {/* TRACINHOS (PAGINAÇÃO) */}
         <View style={styles.pagination}>
           {data.images.map((_: any, i: number) => (
             <View
@@ -239,16 +255,17 @@ const ProjectCard = ({
         <Text style={styles.projectTitle}>{data.title}</Text>
         <Text style={styles.projectSubtitle}>{data.subtitle}</Text>
 
-        {/* PILL (RODAPÉ DO CARD) */}
         <View style={styles.pillContainer}>
           <View style={styles.pillItem}>
             <HappyFaceIcon />
             <Text style={styles.pillText}>{data.volunteers}</Text>
           </View>
+
           <View style={styles.pillItem}>
             <CalendarIcon />
             <Text style={styles.pillText}>{data.date}</Text>
           </View>
+
           <View style={styles.pillItem}>
             <ClockIcon />
             <Text style={styles.pillText}>{data.time}</Text>
@@ -258,10 +275,6 @@ const ProjectCard = ({
     </View>
   );
 };
-
-// ==========================================
-// ÍCONES SVG INLINE RESTAURADOS
-// ==========================================
 
 const LogoTelaInicialSVG = () => (
   <Svg width="50" height="50" viewBox="0 0 50 50" fill="none">
