@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   ImageBackground,
   Modal,
@@ -14,42 +15,80 @@ import {
   View,
 } from "react-native";
 import Svg, { Circle, G, Path, Rect } from "react-native-svg";
-// IMPORT DO CONTEXTO DE AUTENTICAÇÃO
-import { useAuth } from "@/src/contexts/AuthContext"; 
+
+import { useAuth } from "@/src/contexts/AuthContext";
+import { getHistoricoUsuario } from "@/src/services/firebase/firestoreService";
+
+type AcaoParticipada = {
+  id: string;
+  titulo: string;
+  local: string;
+  nota: string;
+  imagem: any;
+};
 
 export default function PerfilScreen() {
   const router = useRouter();
-  const { user } = useAuth();
-  
-  // PUXANDO A FUNÇÃO DE LOGOUT DO SEU BACKEND
-  const { signOut } = useAuth(); 
-  
-  // Controle de visibilidade do Modal
-  const [isLogoutModalVisible, setLogoutModalVisible] = useState(false);
+  const { user, signOut } = useAuth();
 
-  // --- NAVEGAÇÃO DE TELAS (Push) ---
+  const [isLogoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [acoesParticipadas, setAcoesParticipadas] = useState<AcaoParticipada[]>([]);
+  const [loadingAcoes, setLoadingAcoes] = useState(true);
+
   const handleNav = (rota: string) => {
     setTimeout(() => {
       router.push(rota as any);
     }, 50);
   };
 
-  const acoesParticipadas = [
-    {
-      id: "1",
-      titulo: "Igarapé do Mindú",
-      local: "Manaus, Amazonas",
-      nota: "5.0",
-      imagem: require("../src/assets/image_card_1.png"),
-    },
-    {
-      id: "2",
-      titulo: "Praia da Ponta Negra",
-      local: "Manaus, Amazonas",
-      nota: "4.8",
-      imagem: require("../src/assets/image_card_1.png"),
-    },
-  ];
+  useEffect(() => {
+    const carregarAcoesParticipadas = async () => {
+      if (!user?.uid) {
+        setLoadingAcoes(false);
+        return;
+      }
+
+      try {
+        setLoadingAcoes(true);
+
+        const historico = await getHistoricoUsuario(user.uid);
+
+        const acoesFormatadas = historico
+          .filter((item: any) => item.acao)
+          .map((item: any) => {
+            const acao = item.acao;
+
+            return {
+              id: acao.id,
+              titulo: acao.titulo || "Ação sem título",
+              local:
+                acao.cidade && acao.estado
+                  ? `${acao.cidade}, ${acao.estado}`
+                  : "Local não informado",
+              nota: "5.0",
+              imagem:
+                acao.imagens && acao.imagens.length > 0
+                  ? { uri: acao.imagens[0] }
+                  : require("../src/assets/image_card_1.png"),
+            };
+          });
+
+        setAcoesParticipadas(acoesFormatadas);
+      } catch (error) {
+        console.error("Erro ao carregar ações participadas:", error);
+      } finally {
+        setLoadingAcoes(false);
+      }
+    };
+
+    carregarAcoesParticipadas();
+  }, [user?.uid]);
+
+  const nomeUsuario = user?.nome || user?.displayName || "Usuário";
+  const emailUsuario = user?.email || "E-mail não informado";
+  const telefoneUsuario = user?.telefone || "Telefone não informado";
+  const dataNascimentoUsuario =
+    user?.dataNascimento || "Data de nascimento não informada";
 
   return (
     <View style={{ flex: 1 }}>
@@ -65,30 +104,53 @@ export default function PerfilScreen() {
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Perfil do Usuário</Text>
           </View>
-          
-          {/* ÁREA DA CAPA E FOTO DE PERFIL */}
+
           <View style={styles.coverContainer}>
             <ImageBackground
               source={require("../src/assets/image_card_1.png")}
               style={styles.coverImage}
               imageStyle={{ borderRadius: 20 }}
             >
-              {/* Botão de Compartilhar */}
-              <View style={{ position: 'absolute', top: 12, right: 12 }}>
+              <View style={{ position: "absolute", top: 12, right: 12 }}>
                 <TopGlassButton
                   onPress={() => console.log("Compartilhar clicado!")}
                   icon={
                     <G>
-                      <Path d="M16 22L28 15M16 22L28 29" stroke="#001A23" strokeWidth="2.5" strokeLinecap="round" />
-                      <Circle cx="15" cy="22" r="3.5" fill="#EEE82C" stroke="#001A23" strokeWidth="2.5" />
-                      <Circle cx="29" cy="15" r="3.5" fill="#EEE82C" stroke="#001A23" strokeWidth="2.5" />
-                      <Circle cx="29" cy="29" r="3.5" fill="#EEE82C" stroke="#001A23" strokeWidth="2.5" />
+                      <Path
+                        d="M16 22L28 15M16 22L28 29"
+                        stroke="#001A23"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                      />
+                      <Circle
+                        cx="15"
+                        cy="22"
+                        r="3.5"
+                        fill="#EEE82C"
+                        stroke="#001A23"
+                        strokeWidth="2.5"
+                      />
+                      <Circle
+                        cx="29"
+                        cy="15"
+                        r="3.5"
+                        fill="#EEE82C"
+                        stroke="#001A23"
+                        strokeWidth="2.5"
+                      />
+                      <Circle
+                        cx="29"
+                        cy="29"
+                        r="3.5"
+                        fill="#EEE82C"
+                        stroke="#001A23"
+                        strokeWidth="2.5"
+                      />
                     </G>
                   }
                 />
               </View>
 
-              {/* Botão de Editar Perfil */}
               <TouchableOpacity
                 style={styles.editButtonOverlay}
                 activeOpacity={0.7}
@@ -104,7 +166,6 @@ export default function PerfilScreen() {
               </TouchableOpacity>
             </ImageBackground>
 
-            {/* Foto de perfil sobrepondo a capa */}
             <View style={styles.profileImageWrapper}>
               <Image
                 source={require("../src/components/icons/Logos tela inicial.svg")}
@@ -113,24 +174,27 @@ export default function PerfilScreen() {
             </View>
           </View>
 
-          {/* INFORMAÇÕES DO PERFIL */}
           <View style={styles.infoContainer}>
-            {/* Tag de Especialista */}
             <View style={styles.tagContainer}>
               <Ionicons name="ribbon" size={14} color="#012A36" />
               <Text style={styles.tagText}>IgarApp Expert</Text>
             </View>
 
-            <Text style={styles.accountType}>Conta Voluntário</Text>
-            <Text style={styles.profileName}>{user?.razaosocial}</Text>
-
-            <Text style={styles.bioText}>
-              Apaixonado pela preservação da Amazônia. Trabalhando todos os dias
-              para garantir que nossos igarapés voltem a ser fontes de vida e
-              orgulho para Manaus.
+            <Text style={styles.accountType}>
+              {user?.tipo || "Conta Voluntário"}
             </Text>
 
-            {/* Link do Instagram */}
+            <Text style={styles.profileName}>{nomeUsuario}</Text>
+
+            <Text style={styles.profileInfo}>{emailUsuario}</Text>
+            <Text style={styles.profileInfo}>{telefoneUsuario}</Text>
+            <Text style={styles.profileInfo}>{dataNascimentoUsuario}</Text>
+
+            <Text style={styles.bioText}>
+              {user?.bio ||
+                "Apaixonado pela preservação da Amazônia. Trabalhando todos os dias para garantir que nossos igarapés voltem a ser fontes de vida e orgulho para Manaus."}
+            </Text>
+
             <TouchableOpacity style={styles.instagramLink} activeOpacity={0.7}>
               <Ionicons
                 name="logo-instagram"
@@ -138,64 +202,85 @@ export default function PerfilScreen() {
                 color="#A6FF00"
                 style={{ marginRight: 8 }}
               />
-              <Text style={styles.instagramText}>@usuario_igarapp</Text>
+              <Text style={styles.instagramText}>
+                {user?.instagram || "@usuario_igarapp"}
+              </Text>
             </TouchableOpacity>
           </View>
 
-          {/* CARROSSEL DE AÇÕES */}
           <View style={styles.actionsContainer}>
             <Text style={styles.sectionTitle}>Ações que participou</Text>
 
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingLeft: 24, paddingRight: 8 }}
-            >
-              {acoesParticipadas.map((acao) => (
-                <TouchableOpacity
-                  key={acao.id}
-                  style={styles.actionCard}
-                  activeOpacity={0.8}
-                >
-                  <ImageBackground
-                    source={acao.imagem}
-                    style={styles.actionImage}
-                    imageStyle={{ borderRadius: 16 }}
+            {loadingAcoes ? (
+              <ActivityIndicator
+                size="small"
+                color="#A6FF00"
+                style={{ marginTop: 10 }}
+              />
+            ) : acoesParticipadas.length === 0 ? (
+              <Text style={styles.emptyActionsText}>
+                Você ainda não participou de nenhuma ação.
+              </Text>
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingLeft: 24, paddingRight: 8 }}
+              >
+                {acoesParticipadas.map((acao) => (
+                  <TouchableOpacity
+                    key={acao.id}
+                    style={styles.actionCard}
+                    activeOpacity={0.8}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/detalhes-evento",
+                        params: { id: acao.id },
+                      } as any)
+                    }
                   >
-                    <LinearGradient
-                      colors={["transparent", "rgba(1, 42, 54, 0.9)"]}
-                      locations={[0.4, 1]}
-                      style={styles.actionGradient}
+                    <ImageBackground
+                      source={acao.imagem}
+                      style={styles.actionImage}
+                      imageStyle={{ borderRadius: 16 }}
                     >
-                      <Text style={styles.actionTitle}>{acao.titulo}</Text>
-                      <View style={styles.actionLocationRow}>
-                        <Text style={styles.actionLocation}>{acao.local}</Text>
-                        <View style={styles.ratingContainer}>
-                          <Ionicons name="star" size={12} color="#A6FF00" />
-                          <Text style={styles.ratingText}>{acao.nota}</Text>
+                      <LinearGradient
+                        colors={["transparent", "rgba(1, 42, 54, 0.9)"]}
+                        locations={[0.4, 1]}
+                        style={styles.actionGradient}
+                      >
+                        <Text style={styles.actionTitle}>{acao.titulo}</Text>
+                        <View style={styles.actionLocationRow}>
+                          <Text style={styles.actionLocation}>{acao.local}</Text>
+                          <View style={styles.ratingContainer}>
+                            <Ionicons name="star" size={12} color="#A6FF00" />
+                            <Text style={styles.ratingText}>{acao.nota}</Text>
+                          </View>
                         </View>
-                      </View>
-                    </LinearGradient>
-                  </ImageBackground>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+                      </LinearGradient>
+                    </ImageBackground>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
           </View>
 
-          {/* BOTAO DE LOGOUT (ABRE O MODAL) */}
-          <TouchableOpacity 
-            style={styles.logoutButton} 
-            activeOpacity={0.7} 
+          <TouchableOpacity
+            style={styles.logoutButton}
+            activeOpacity={0.7}
             onPress={() => setLogoutModalVisible(true)}
           >
-            <Ionicons name="log-out-outline" size={20} color="#FF3B30" style={{ marginRight: 8 }} />
+            <Ionicons
+              name="log-out-outline"
+              size={20}
+              color="#FF3B30"
+              style={{ marginRight: 8 }}
+            />
             <Text style={styles.logoutButtonText}>Sair da conta</Text>
           </TouchableOpacity>
-
         </ScrollView>
       </LinearGradient>
 
-      {/* MODAL PERSONALIZADO DE LOGOUT */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -207,11 +292,13 @@ export default function PerfilScreen() {
             <View style={styles.modalIconContainer}>
               <Ionicons name="log-out-outline" size={32} color="#FF3B30" />
             </View>
+
             <Text style={styles.modalTitle}>Sair da conta</Text>
-            <Text style={styles.modalText}>Tem certeza que deseja sair do IgarApp?</Text>
-            
+            <Text style={styles.modalText}>
+              Tem certeza que deseja sair do IgarApp?
+            </Text>
+
             <View style={styles.modalButtonsRow}>
-              {/* Botão Cancelar */}
               <TouchableOpacity
                 style={styles.modalCancelButton}
                 activeOpacity={0.7}
@@ -220,15 +307,14 @@ export default function PerfilScreen() {
                 <Text style={styles.modalCancelText}>Cancelar</Text>
               </TouchableOpacity>
 
-              {/* Botão Sair - AGORA COM A FUNÇÃO DO FIREBASE */}
               <TouchableOpacity
                 style={styles.modalConfirmButton}
                 activeOpacity={0.7}
                 onPress={async () => {
                   try {
-                    setLogoutModalVisible(false); // Fecha o modal primeiro
-                    await signOut();              // Desloga no Firebase
-                    router.replace("/login_pl");  // Vai pra tela de login
+                    setLogoutModalVisible(false);
+                    await signOut();
+                    router.replace("/login_pl");
                   } catch (error) {
                     console.error("Falha ao deslogar:", error);
                   }
@@ -240,14 +326,9 @@ export default function PerfilScreen() {
           </View>
         </View>
       </Modal>
-
     </View>
   );
 }
-
-// ==========================================
-// COMPONENTES AUXILIARES E ÍCONES SVG
-// ==========================================
 
 const TopGlassButton = ({
   icon,
@@ -280,7 +361,15 @@ const TopGlassButton = ({
       />
       <G>
         <Rect x="2.5" y="2.5" width="39" height="39" rx="15" fill="#EEE82C" />
-        <Rect x="3" y="3" width="38" height="38" rx="14.5" stroke="#001A23" strokeOpacity="0.4" />
+        <Rect
+          x="3"
+          y="3"
+          width="38"
+          height="38"
+          rx="14.5"
+          stroke="#001A23"
+          strokeOpacity="0.4"
+        />
         {icon}
       </G>
     </Svg>
@@ -297,7 +386,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#E8F1F2",
   },
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+  },
   coverContainer: {
     paddingHorizontal: 24,
     marginTop: Platform.OS === "ios" ? 50 : 25,
@@ -330,7 +421,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.2)",
   },
-  editButtonText: { color: "#FFF", fontSize: 12, fontWeight: "500" },
+  editButtonText: {
+    color: "#FFF",
+    fontSize: 12,
+    fontWeight: "500",
+  },
   profileImageWrapper: {
     position: "absolute",
     bottom: -30,
@@ -342,8 +437,15 @@ const styles = StyleSheet.create({
     borderColor: "#012A36",
     backgroundColor: "#012A36",
   },
-  profileImage: { width: "100%", height: "100%", borderRadius: 40 },
-  infoContainer: { paddingHorizontal: 24, marginBottom: 30 },
+  profileImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 40,
+  },
+  infoContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 30,
+  },
   tagContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -369,17 +471,32 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 16,
+    marginBottom: 6,
+  },
+  profileInfo: {
+    color: "rgba(255,255,255,0.65)",
+    fontSize: 13,
+    marginBottom: 4,
   },
   bioText: {
     color: "rgba(255,255,255,0.7)",
     fontSize: 14,
     lineHeight: 20,
+    marginTop: 12,
     marginBottom: 16,
   },
-  instagramLink: { flexDirection: "row", alignItems: "center" },
-  instagramText: { color: "#A6FF00", fontSize: 14, fontWeight: "500" },
-  actionsContainer: { marginTop: 0 },
+  instagramLink: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  instagramText: {
+    color: "#A6FF00",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  actionsContainer: {
+    marginTop: 0,
+  },
   sectionTitle: {
     color: "#FFF",
     fontSize: 18,
@@ -387,8 +504,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     marginBottom: 16,
   },
-  actionCard: { width: 260, height: 160, marginRight: 16, borderRadius: 16 },
-  actionImage: { width: "100%", height: "100%" },
+  emptyActionsText: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 14,
+    paddingHorizontal: 24,
+  },
+  actionCard: {
+    width: 260,
+    height: 160,
+    marginRight: 16,
+    borderRadius: 16,
+  },
+  actionImage: {
+    width: "100%",
+    height: "100%",
+  },
   actionGradient: {
     flex: 1,
     justifyContent: "flex-end",
@@ -406,8 +536,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  actionLocation: { color: "rgba(255,255,255,0.7)", fontSize: 12 },
-  ratingContainer: { flexDirection: "row", alignItems: "center" },
+  actionLocation: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 12,
+  },
+  ratingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   ratingText: {
     color: "#FFF",
     fontSize: 12,
@@ -431,11 +567,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-  
-  // ESTILOS DO MODAL
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 26, 35, 0.8)", 
+    backgroundColor: "rgba(0, 26, 35, 0.8)",
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 24,
