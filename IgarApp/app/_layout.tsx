@@ -36,6 +36,7 @@ function RootLayoutContent() {
     "/perfil_ong",
     "/historico",
     "/pesquisa",
+    "/tamba",
   ];
 
   const mostrarNavbar = rotasComNavbar.includes(pathname);
@@ -96,7 +97,7 @@ function RootLayoutContent() {
               <TouchableOpacity
                 style={styles.tabIcon}
                 activeOpacity={0.7}
-                onPress={() => { /* router.push("/pesquisa") */ }}
+                onPress={() => router.push("/tamba")} 
               >
                 <FishNavIcon active={pathname === "/pesquisa"} />
               </TouchableOpacity>
