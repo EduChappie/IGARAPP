@@ -204,10 +204,12 @@ export default function DetalhesEventoScreen() {
   const voluntariosInscritos = acao?.voluntariosInscritos || 0;
   const voluntariosNecessarios = acao?.voluntariosNecessarios || 0;
 
-  const dataFormatada = acao?.data
-  ? new Date(acao.data).toLocaleDateString("pt-BR")
+
+const dataBase = acao?.dataEvento ?? acao?.data;
+
+const dataFormatada = dataBase
+  ? new Date(dataBase).toLocaleDateString("pt-BR")
   : "Data não informada";
-            
 
   const horario =
     acao?.horaInicio && acao?.horaFim
