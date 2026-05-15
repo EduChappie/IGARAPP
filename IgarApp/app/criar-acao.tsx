@@ -1,6 +1,8 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
+import * as ImagePicker from "expo-document-picker";
+
 import {
   ActivityIndicator,
   Dimensions,

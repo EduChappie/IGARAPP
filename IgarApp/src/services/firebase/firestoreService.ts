@@ -24,7 +24,7 @@ export interface Participacao {
   acaoId: string;
   userId: string;
   dataInscricao: Date;
-  status: 'confirmado' | 'pendente' | 'cancelado';
+  status: 'pendente' | 'cancelado' | 'confirmado';
   createdAt?: any; // Firestore timestamp
 }
 
@@ -32,7 +32,7 @@ export interface VoluntarioPresenca {
   participacaoId: string;
   userId: string;
   nome: string;
-  status: 'confirmado' | 'pendente' | 'cancelado';
+  status: 'pendente' | 'cancelado' | 'confirmado';
 }
 
 export interface Acao {
@@ -64,7 +64,7 @@ export const participacaoService = {
         acaoId,
         userId,
         dataInscricao: new Date(),
-        status: 'confirmado',
+        status: 'pendente',
       };
 
       const participacoesRef = collection(firestore, 'participacoes');
@@ -300,7 +300,11 @@ export const acaoService = {
         descricao: info?.descricao || '',
         cidade: info?.cidade || '',
         estado: info?.estado || '',
-        data: info?.data?.toDate() || new Date(),
+        data: info?.data instanceof Date
+            ? info.data
+            : info?.data?.toDate
+            ? info.data.toDate()
+            : new Date(info.data),
         horaInicio: info?.horaInicio || '',
         horaFim: info?.horaFim || '',
         voluntariosNecessarios: info?.voluntariosNecessarios || 0,
@@ -342,7 +346,11 @@ export const acaoService = {
             descricao: data?.descricao || '',
             cidade: data?.cidade || '',
             estado: data?.estado || '',
-            data: data?.data?.toDate() || new Date(),
+            data: data?.data instanceof Date
+              ? data.data
+              : data?.data?.toDate
+              ? data.data.toDate()
+              : new Date(data.data),
             horaInicio: data?.horaInicio || '',
             horaFim: data?.horaFim || '',
             voluntariosNecessarios: data?.voluntariosNecessarios || 0,

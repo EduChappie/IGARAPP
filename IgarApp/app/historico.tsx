@@ -223,7 +223,14 @@ export default function HistoricoScreen() {
         </Text>
         <TouchableOpacity
           style={localStyles.exploreButton}
-          onPress={() => router.push('/home_user')}
+          onPress={() => {
+            
+            if (user?.tipo == "voluntário") {
+              router.push('/home_user')
+
+            } else if (user?.tipo == "ong")
+              router.push('/home_ong')            
+          }}
         >
           <Text style={localStyles.exploreButtonText}>Explorar eventos</Text>
         </TouchableOpacity>
