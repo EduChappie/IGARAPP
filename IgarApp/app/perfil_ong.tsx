@@ -19,8 +19,7 @@ import { useAuth } from "@/src/contexts/AuthContext";
 
 export default function PerfilOngScreen() {
   const router = useRouter();
-
-  // PUXANDO A FUNÇÃO DE LOGOUT DO SEU BACKEND
+  const { user } = useAuth();
   const { signOut } = useAuth();
 
   // Controle de visibilidade do Modal
@@ -115,17 +114,18 @@ export default function PerfilOngScreen() {
           {/* INFORMAÇÕES DO PERFIL */}
           <View style={styles.infoContainer}>
             <Text style={styles.accountType}>Conta ONG</Text>
-            <Text style={styles.profileName}>Instituto Salve os Igarapés</Text>
+            <Text style={styles.profileName}>{user?.razaoSocial}</Text>
 
             {/* Endereço Adicionado */}
             <View style={styles.locationRow}>
               <Ionicons name="location-outline" size={16} color="#A6FF00" style={{ marginRight: 6 }} />
-              <Text style={styles.locationText}>Av. Djalma Batista, 1234 - Manaus, AM</Text>
+              <Text style={styles.locationText}>
+                {user?.endereco.bairro}, {user?.endereco.rua}, {user?.endereco.numero} - {user?.endereco.cidade}, {user?.endereco.estado}
+                </Text>
             </View>
 
             <Text style={styles.bioText}>
-              Organização não governamental dedicada à revitalização e conservação 
-              dos igarapés de Manaus através da mobilização de voluntários e educação ambiental.
+              {user?.so}
             </Text>
 
             {/* Link do Instagram */}

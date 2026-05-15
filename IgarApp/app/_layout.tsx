@@ -7,12 +7,22 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path, G, Rect } from "react-native-svg";
 import React from "react";
 import { AuthProvider } from "@/src/contexts/AuthContext";
+import { useAuth } from "@/src/contexts/AuthContext";
 
 SystemUI.setBackgroundColorAsync("#001A23");
 
 export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <RootLayoutContent />
+    </AuthProvider>
+  );
+}
+
+function RootLayoutContent() {
   const pathname = usePathname();
   const router = useRouter();
+  const { user } = useAuth();
 
   const CustomDarkTheme = {
     ...DarkTheme,
@@ -23,51 +33,66 @@ export default function RootLayout() {
     "/home_user",
     "/home_ong",
     "/perfil_pf",
+    "/perfil_ong",
     "/historico",
     "/pesquisa",
-    "/editar_acao"
   ];
 
   const mostrarNavbar = rotasComNavbar.includes(pathname);
 
   return (
-    <AuthProvider>
-      <ThemeProvider value={CustomDarkTheme}>
-        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+    <ThemeProvider value={CustomDarkTheme}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            animation: "fade",
-            contentStyle: { backgroundColor: "#001A23" },
-          }}
-        />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: "fade",
+          contentStyle: { backgroundColor: "#001A23" },
+        }}
+      />
 
-        {mostrarNavbar && (
-          <View style={styles.tabBarWrapper} pointerEvents="box-none">
-            <LinearGradient
-              colors={["rgba(0, 26, 35, 0)", "#001A23"]}
-              style={StyleSheet.absoluteFillObject}
-              pointerEvents="none"
-            />
-            <BlurView intensity={20} tint="dark" style={styles.tabBarContainer}>
+      {mostrarNavbar && (
+        <View style={styles.tabBarWrapper} pointerEvents="box-none">
+          <LinearGradient
+            colors={["rgba(0, 26, 35, 0)", "#001A23"]}
+            style={StyleSheet.absoluteFillObject}
+            pointerEvents="none"
+          />
 
-              <TouchableOpacity
-                style={styles.tabIcon}
-                activeOpacity={0.7}
-                onPress={() => router.push("/home_ong")}
-              >
-                <HomeIcon active={pathname === "/home_user" || pathname === "/home_ong"} />
-              </TouchableOpacity>
+          <BlurView intensity={20} tint="dark" style={styles.tabBarContainer}>
 
-              <TouchableOpacity
-                style={styles.tabIcon}
-                activeOpacity={0.7}
-                onPress={() => router.push("/perfil_pf")}
-              >
-                <UserIcon active={pathname === "/perfil_pf"} />
-              </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.tabIcon}
+              activeOpacity={0.7}
+              onPress={() => {
+                if (user?.tipo == "ong") {
+                  router.push("/home_ong");
 
+                } else if (user?.tipo == "voluntário") {
+                  router.push("/home_user");
+                }
+              }}
+            >
+              <HomeIcon active={pathname === "/home_user" || pathname === "/home_ong"} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.tabIcon}
+              activeOpacity={0.7}
+              onPress={() => {
+                if (user?.tipo == "ong") {
+                  router.push("/perfil_ong");
+
+                } else if (user?.tipo == "voluntário") {
+                  router.push("/perfil_pf");
+                }
+              }}
+            >
+              <UserIcon active={pathname === "/perfil_pf" || pathname === "/perfil_ong"} />
+            </TouchableOpacity>
+
+            {user?.tipo == "voluntário" && (
               <TouchableOpacity
                 style={styles.tabIcon}
                 activeOpacity={0.7}
@@ -75,20 +100,20 @@ export default function RootLayout() {
               >
                 <FishNavIcon active={pathname === "/pesquisa"} />
               </TouchableOpacity>
+            )}
 
-              <TouchableOpacity
-                style={styles.tabIcon}
-                activeOpacity={0.7}
-                onPress={() => router.push("/historico")}
-              >
-                <RefreshIcon active={pathname === "/historico"} />
-              </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.tabIcon}
+              activeOpacity={0.7}
+              onPress={() => router.push("/historico")}
+            >
+              <RefreshIcon active={pathname === "/historico"} />
+            </TouchableOpacity>
 
-            </BlurView>
-          </View>
-        )}
-      </ThemeProvider>
-    </AuthProvider>
+          </BlurView>
+        </View>
+      )}
+    </ThemeProvider>
   );
 }
 
@@ -125,6 +150,7 @@ const UserIcon = ({ active }: { active: boolean }) => (
     </G>
   </Svg>
 );
+
 
 const FishNavIcon = ({ active }: { active: boolean }) => (
   <Svg width="54" height="55" viewBox="0 0 54 55" fill="none">

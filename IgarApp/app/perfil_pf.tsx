@@ -19,6 +19,7 @@ import { useAuth } from "@/src/contexts/AuthContext";
 
 export default function PerfilScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   
   // PUXANDO A FUNÇÃO DE LOGOUT DO SEU BACKEND
   const { signOut } = useAuth(); 
@@ -121,7 +122,7 @@ export default function PerfilScreen() {
             </View>
 
             <Text style={styles.accountType}>Conta Voluntário</Text>
-            <Text style={styles.profileName}>Nome do Usuário</Text>
+            <Text style={styles.profileName}>{user?.razaosocial}</Text>
 
             <Text style={styles.bioText}>
               Apaixonado pela preservação da Amazônia. Trabalhando todos os dias
