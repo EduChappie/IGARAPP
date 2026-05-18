@@ -4,7 +4,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Image,
   ImageBackground,
@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import Svg, { Circle, G, Path, Rect } from "react-native-svg";
 import { useAuth } from "@/src/contexts/AuthContext";
+import { getHistoricoUsuario } from "@/src/services/firebase/firestoreService";
 
 // Imagem padrão usada quando o usuário não tem foto
 const FOTO_PERFIL_PADRAO = require("../src/assets/image_card_1.png");
@@ -26,6 +27,28 @@ const FOTO_CAPA_PADRAO = require("../src/assets/image_card_1.png");
 export default function PerfilPfScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+
+  const carregarAcoesRecentes = async () => {
+  try {
+    const historico = await getHistoricoUsuario(`${user?.uid}`);
+
+    const dadosFormatados = historico
+      .filter(item => item.acao) // garante que existe ação
+      .map(item => ({
+        id: item.acao?.id || "",
+        titulo: item.acao?.titulo || "",
+        local: `${item.acao?.cidade || ""}, ${item.acao?.estado || ""}`,
+        nota: "5.0", // pode trocar futuramente
+        imagem:
+          item.acao?.imagens?.[0] ||
+          FOTO_PERFIL_PADRAO,
+      }));
+
+    setAcoesRecentes(dadosFormatados);
+  } catch (error) {
+    console.log("Erro ao carregar ações:", error);
+  }
+};
 
   const [isLogoutModalVisible, setLogoutModalVisible] = useState(false);
 
@@ -47,22 +70,21 @@ export default function PerfilPfScreen() {
     ? { uri: (user as any).fotoCapa }
     : FOTO_CAPA_PADRAO;
 
-  const acoesRecentes = [
-    {
-      id: "1",
-      titulo: "Igarapé do Mindú",
-      local: "Manaus, Amazonas",
-      nota: "5.0",
-      imagem: FOTO_PERFIL_PADRAO,
-    },
-    {
-      id: "2",
-      titulo: "Praia da Ponta Negra",
-      local: "Manaus, Amazonas",
-      nota: "4.8",
-      imagem: FOTO_PERFIL_PADRAO,
-    },
-  ];
+  interface AcaoRecente {
+    id: string;
+    titulo: string;
+    local: string;
+    nota: string;
+    imagem: any;
+  }
+
+  const [acoesRecentes, setAcoesRecentes] = useState<AcaoRecente[]>([]);
+
+  useEffect(() => {
+    if (user?.uid) {
+      carregarAcoesRecentes();
+    }
+  }, [user]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -151,7 +173,11 @@ export default function PerfilPfScreen() {
                   activeOpacity={0.8}
                 >
                   <ImageBackground
-                    source={acao.imagem}
+                    source={
+                      typeof acao.imagem === "string"
+                        ? { uri: acao.imagem }
+                        : acao.imagem
+                    }
                     style={styles.actionImage}
                     imageStyle={{ borderRadius: 16 }}
                   >
