@@ -295,6 +295,7 @@ export default function PerfilOngScreen() {
               <TouchableOpacity
                 style={styles.modalConfirmButton}
                 activeOpacity={0.7}
+                // Depois — aguarda o signOut completar antes de navegar
                 onPress={async () => {
                   try {
                     setLogoutModalVisible(false);

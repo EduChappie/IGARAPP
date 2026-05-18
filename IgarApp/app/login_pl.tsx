@@ -2,7 +2,7 @@ import { extra, styles } from "@/styles/_style";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Image,
   StyleSheet,
@@ -14,13 +14,14 @@ import {
   ActivityIndicator,
 } from "react-native";
 import Svg, { G, Path, Rect } from "react-native-svg";
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/src/services/firebase/config';
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/src/services/firebase/config";
 import { useAuth } from "@/src/contexts/AuthContext";
 
 export default function LoginScreen() {
   const router = useRouter();
   const { user } = useAuth();
+
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [isFocused1, setIsFocused1] = useState(false);
@@ -29,72 +30,68 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [errorModalVisible, setErrorModalVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [loginRealizado, setLoginRealizado] = useState(false);
 
-  // --- PADRÃO DE NAVEGAÇÃO SUAVE (50ms) ---
+  // Aguarda o contexto popular com os dados do Firestore antes de navegar
+  useEffect(() => {
+    if (loginRealizado && user?.tipo) {
+      setLoading(false);
+      setLoginRealizado(false);
+
+      if (user.tipo === "voluntário") {
+        router.replace("/home_user");
+      } else if (user.tipo === "ong") {
+        router.replace("/home_ong");
+      }
+    }
+  }, [user, loginRealizado]);
+
   const handleNavigation = (rota: string) => {
     setTimeout(() => {
       router.push(rota as any);
     }, 50);
   };
 
-  function passwordVisibility() {
-    setIsPasswordHidden(!isPasswordHidden);
-  }
+  const passwordVisibility = () => setIsPasswordHidden(!isPasswordHidden);
 
-  // --- VALIDAÇÃO DO FORMULÁRIO ---
   const isFormValid = email.trim().includes("@") && senha.length >= 6;
 
-  // --- LOGIN COM FIREBASE AUTH ---
   const handleLogin = async () => {
     if (!isFormValid) return;
 
     setLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, senha);
-      
-      // console.log("Login bem-sucedido:", userCredential.user.uid);
-
-      // Redireciona para home_user após login bem-sucedido
-      setTimeout(() => {
-        if (user?.tipo == "voluntário") {
-          router.replace("/home_user");
-
-        } else if (user?.tipo == "ong") {
-          router.replace("/home_ong");
-        }
-        
-      }, 50);
+      await signInWithEmailAndPassword(auth, email, senha);
+      // Sinaliza que o login foi feito; a navegação ocorre no useEffect
+      setLoginRealizado(true);
     } catch (error: any) {
+      setLoading(false);
       console.error("Erro no login:", error);
 
-      // Tratamento de erros específicos do Firebase
       let message = "Erro ao fazer login. Tente novamente.";
-
       switch (error.code) {
-        case 'auth/invalid-email':
+        case "auth/invalid-email":
           message = "Email inválido. Verifique o formato.";
           break;
-        case 'auth/user-disabled':
+        case "auth/user-disabled":
           message = "Esta conta foi desativada.";
           break;
-        case 'auth/user-not-found':
+        case "auth/user-not-found":
           message = "Usuário não encontrado. Verifique o email.";
           break;
-        case 'auth/wrong-password':
+        case "auth/wrong-password":
           message = "Senha incorreta. Tente novamente.";
           break;
-        case 'auth/too-many-requests':
+        case "auth/too-many-requests":
           message = "Muitas tentativas. Tente mais tarde.";
           break;
-        case 'auth/network-request-failed':
+        case "auth/network-request-failed":
           message = "Erro de conexão. Verifique sua internet.";
           break;
       }
 
       setErrorMessage(message);
       setErrorModalVisible(true);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -105,7 +102,6 @@ export default function LoginScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#012A36" }}>
-      {/* BOTÃO VOLTAR - CORRIGIDO PARA SEMPRE IR PARA FIRSTSCREEN */}
       <View style={{ position: "absolute", top: 60, left: 24, zIndex: 10 }}>
         <TopGlassButton onPress={() => handleNavigation("/firstscreen")} />
       </View>
@@ -181,7 +177,6 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* BOTÃO ACESSAR COM FIREBASE AUTH */}
             <TouchableOpacity
               disabled={!isFormValid || loading}
               activeOpacity={0.6}
@@ -199,10 +194,10 @@ export default function LoginScreen() {
                 <>
                   <Text style={extra.buttonSubmitText}>Acessar Conta</Text>
                   <Ionicons
-                    name={"arrow-forward"}
+                    name="arrow-forward"
                     style={{ transform: [{ rotate: "-45deg" }] }}
                     size={20}
-                    color={"#000000"}
+                    color="#000000"
                   />
                 </>
               )}
@@ -249,6 +244,8 @@ export default function LoginScreen() {
     </View>
   );
 }
+
+// ── Componente auxiliar ────────────────────────────────────────────────────────
 
 const TopGlassButton = ({ onPress }: { onPress: () => void }) => (
   <TouchableOpacity
@@ -303,6 +300,8 @@ const TopGlassButton = ({ onPress }: { onPress: () => void }) => (
     </Svg>
   </TouchableOpacity>
 );
+
+// ── Estilos do modal ──────────────────────────────────────────────────────────
 
 const modalStyles = StyleSheet.create({
   modalOverlay: {
