@@ -57,8 +57,16 @@ export default function HistoricoDetalhesScreen() {
     // (moverParaHistorico copia para 'historico', mas getAcaoById busca em 'acoes')
     // Aqui usamos getAcaoById para simplificar — ajuste se necessário.
     acaoService
-      .getAcaoById(id)
-      .then((dados) => setAcao(dados))
+      .getHistoricoById(id)
+      .then(async (dadosHistorico) => {
+        if (dadosHistorico) {
+          setAcao(dadosHistorico);
+          return;
+        }
+
+        const dadosAcaoAtiva = await acaoService.getAcaoById(id);
+        setAcao(dadosAcaoAtiva);
+      })
       .catch((err) => console.error("Erro ao carregar ação:", err))
       .finally(() => setCarregando(false));
   }, [id]);

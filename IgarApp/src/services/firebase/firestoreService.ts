@@ -1,6 +1,4 @@
-// Serviço para operações do Firestore do IgarApp usando Firebase v9 modular API
-import { onSnapshot } from 'firebase/firestore';
-import { firestore, FieldValue, serverTimestamp } from './config';
+import { firestore, serverTimestamp } from "./config";
 import {
   collection,
   Timestamp,
@@ -13,27 +11,31 @@ import {
   doc,
   getDoc,
   updateDoc,
-  deleteDoc,
   writeBatch,
-  setDoc
-} from 'firebase/firestore';
-import { Alert } from 'react-native';
+  setDoc,
+} from "firebase/firestore";
+import { Alert } from "react-native";
 
-// Tipos de dados
+type ParticipacaoStatus =
+  | "confirmado"
+  | "pendente"
+  | "cancelado"
+  | "participando";
+
 export interface Participacao {
   id?: string;
   acaoId: string;
   userId: string;
   dataInscricao: Date;
-  status: 'confirmado' | 'pendente' | 'cancelado';
-  createdAt?: any; // Firestore timestamp
+  status: ParticipacaoStatus;
+  createdAt?: any;
 }
 
 export interface VoluntarioPresenca {
   participacaoId: string;
   userId: string;
   nome: string;
-  status: 'confirmado' | 'pendente' | 'cancelado';
+  status: ParticipacaoStatus;
 }
 
 export interface Acao {
@@ -49,382 +51,16 @@ export interface Acao {
   voluntariosInscritos: number;
   ongId: string;
   imagens: string[];
+  imagensFinalizacao?: string[];
   metas: string[];
   orientacoes: string;
   lixoRecolhido?: string;
   metasConcluidas?: number[];
-  createdAt?: any; // Firestore timestamp
+  status?: "ativa" | "finalizada";
+  finalizadoEm?: any;
+  acaoOriginalId?: string;
+  createdAt?: any;
 }
-
-// Serviço de participações
-export const participacaoService = {
-  // Inscrever usuário em uma ação
-  async inscreverEmAcao(acaoId: string, userId: string): Promise<string> {
-    try {
-      const participacaoData: Omit<Participacao, 'id'> = {
-        acaoId,
-        userId,
-        dataInscricao: new Date(),
-        status: 'confirmado',
-      };
-
-      const participacoesRef = collection(firestore, 'participacoes');
-      const docRef = await addDoc(participacoesRef, {
-        ...participacaoData,
-        createdAt: serverTimestamp(),
-      });
-
-      console.log('Inscrição realizada com sucesso:', docRef.id);
-      return docRef.id;
-    } catch (error: any) {
-      console.error('Erro ao inscrever em ação:', error);
-      throw error;
-    }
-  },
-
-  // Verificar se usuário já está inscrito em uma ação
-  async verificarInscricao(acaoId: string, userId: string): Promise<boolean> {
-    try {
-      const participacoesRef = collection(firestore, 'participacoes');
-      const q = query(
-        participacoesRef,
-        where('acaoId', '==', acaoId),
-        where('userId', '==', userId),
-        limit(1)
-      );
-
-      const snapshot = await getDocs(q);
-      return !snapshot.empty;
-    } catch (error: any) {
-      console.error('Erro ao verificar inscrição:', error);
-      throw error;
-    }
-  },
-
-  // Buscar todas as participações de um usuário
-  async getParticipacoesUsuario(userId: string): Promise<Participacao[]> {
-    try {
-      const participacoesRef = collection(firestore, 'participacoes');
-      const q = query(
-        participacoesRef,
-        where('userId', '==', userId),
-        orderBy('dataInscricao', 'desc')
-      );
-
-      const snapshot = await getDocs(q);
-      const participacoes: Participacao[] = [];
-
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        participacoes.push({
-          id: doc.id,
-          acaoId: data.acaoId,
-          userId: data.userId,
-          dataInscricao: data.dataInscricao?.toDate() || new Date(),
-          status: data.status || 'confirmado',
-          createdAt: data.createdAt,
-        });
-      });
-
-      return participacoes;
-    } catch (error: any) {
-      console.error('Erro ao buscar participações:', error);
-      throw error;
-    }
-  },
-
-  // Cancelar participação
-  async cancelarParticipacao(participacaoId: string): Promise<void> {
-    try {
-      const participacaoRef = doc(firestore, 'participacoes', participacaoId);
-      await updateDoc(participacaoRef, {
-        status: 'cancelado',
-        updatedAt: serverTimestamp(),
-      });
-
-      console.log('Participação cancelada:', participacaoId);
-    } catch (error: any) {
-      console.error('Erro ao cancelar participação:', error);
-      throw error;
-    }
-  },
-
-  // Buscar todos os voluntários inscritos em uma ação com nome do usuário
-  async getVoluntariosDaAcao(acaoId: string): Promise<VoluntarioPresenca[]> {
-    try {
-      // 1. Buscar participações da ação
-      const participacoesRef = collection(firestore, 'participacoes');
-      const q = query(participacoesRef, where('acaoId', '==', acaoId));
-      const snapshot = await getDocs(q);
-
-      if (snapshot.empty) return [];
-
-      // 2. Para cada participação, buscar o nome do usuário em 'users'
-      const voluntarios: VoluntarioPresenca[] = [];
-
-      const promises = snapshot.docs.map(async (participacaoDoc) => {
-        const data = participacaoDoc.data();
-        const userRef = doc(firestore, 'users', data.userId);
-        const userSnap = await getDoc(userRef);
-        const nome = userSnap.exists()
-          ? (userSnap.data()?.nome || userSnap.data()?.razaoSocial || 'Usuário')
-          : 'Usuário';
-
-        voluntarios.push({
-          participacaoId: participacaoDoc.id,
-          userId: data.userId,
-          nome,
-          status: data.status || 'confirmado',
-        });
-      });
-
-      await Promise.all(promises);
-      return voluntarios;
-    } catch (error: any) {
-      console.error('Erro ao buscar voluntários da ação:', error);
-      throw error;
-    }
-  },
-
-  // Alternar presença do voluntário (confirmado ↔ cancelado)
-  async togglePresenca(participacaoId: string, statusAtual: 'confirmado' | 'pendente' | 'cancelado'): Promise<'confirmado' | 'cancelado'> {
-    try {
-      const novoStatus = statusAtual === 'confirmado' ? 'cancelado' : 'confirmado';
-      const participacaoRef = doc(firestore, 'participacoes', participacaoId);
-      await updateDoc(participacaoRef, {
-        status: novoStatus,
-        updatedAt: serverTimestamp(),
-      });
-
-      console.log('Presença atualizada:', participacaoId, novoStatus);
-      return novoStatus;
-    } catch (error: any) {
-      console.error('Erro ao atualizar presença:', error);
-      throw error;
-    }
-  },
-};
-
-// Serviço de ações
-export const acaoService = {
-
-  // Função para mover evento para histórico
-  async moverParaHistorico(eventoId: string) {
-    try {
-      const eventoRef = doc(firestore, 'acoes', eventoId);
-
-      // Pega os dados do evento
-      const eventoSnap = await getDoc(eventoRef);
-
-      if (!eventoSnap.exists()) {
-        throw new Error('Evento não encontrado');
-      }
-
-      const dadosEvento = eventoSnap.data();
-
-      // Referência da nova coleção
-      const historicoRef = doc(collection(firestore, 'historico'));
-
-      // Cria batch
-      const batch = writeBatch(firestore);
-
-      // Adiciona no histórico
-      batch.set(historicoRef, {
-        ...dadosEvento,
-        movidoEm: new Date(),
-      });
-
-      // Remove de eventos
-      batch.delete(eventoRef);
-
-      // Executa tudo junto
-      await batch.commit();
-
-      console.log('Evento movido para histórico!');
-    } catch (error) {
-      console.error('Erro ao mover evento:', error);
-    }
-  },
-
-
-  // Criar nova ação
-  async criarAcao(acao: Omit<Acao, 'id' | 'createdAt'>): Promise<string> {
-    try {
-      const acoesRef = collection(firestore, 'acoes');
-      const docRef = await addDoc(acoesRef, {
-        ...acao,
-
-        // Converte Date para Timestamp do Firebase
-        data: Timestamp.fromDate(new Date(acao.data)),
-
-        createdAt: serverTimestamp(),
-      });
-
-      console.log('Ação criada com sucesso:', docRef.id);
-      return docRef.id;
-    } catch (error: any) {
-      console.error('Erro ao criar ação:', error);
-      throw error;
-    }
-  },
-
-  // Editar ação existente (usado ao finalizar)
-  async editarAcao(acaoId: string, campos: Partial<Omit<Acao, 'id' | 'createdAt'>>): Promise<void> {
-    try {
-      const acaoRef = doc(firestore, 'acoes', acaoId);
-      await updateDoc(acaoRef, {
-        ...campos,
-        updatedAt: serverTimestamp(),
-      });
-
-      console.log('Ação editada com sucesso:', acaoId);
-    } catch (error: any) {
-      console.error('Erro ao editar ação:', error);
-      throw error;
-    }
-  },
-
-  // Buscar ação por ID
-  async getAcaoById(acaoId: string): Promise<Acao | null> {
-    try {
-      const acaoRef = doc(firestore, 'acoes', acaoId);
-      const acaoDoc = await getDoc(acaoRef);
-
-      if (!acaoDoc.exists()) {
-        return null;
-      }
-
-      const info = acaoDoc.data();
-      return {
-        id: acaoDoc.id,
-        titulo: info?.titulo || '',
-        descricao: info?.descricao || '',
-        cidade: info?.cidade || '',
-        estado: info?.estado || '',
-        data: info?.data instanceof Date
-            ? info.data
-            : info?.data?.toDate
-            ? info.data.toDate()
-            : new Date(info.data),
-        horaInicio: info?.horaInicio || '',
-        horaFim: info?.horaFim || '',
-        voluntariosNecessarios: info?.voluntariosNecessarios || 0,
-        voluntariosInscritos: info?.voluntariosInscritos || 0,
-        ongId: info?.organizadorId || '',
-        imagens: info?.imagens || [],
-        metas: info?.metas || [],
-        orientacoes: info?.orientacoes || '',
-        lixoRecolhido: info?.lixoRecolhido || '',
-        metasConcluidas: info?.metasConcluidas || [],
-        createdAt: info?.createdAt,
-      };
-    } catch (error: any) {
-      console.error('Erro ao buscar ação:', error);
-      throw error;
-    }
-  },
-
-  // Buscar múltiplas ações por IDs
-  async getAcoesByIds(acaoIds: string[]): Promise<Acao[]> {
-    try {
-      if (acaoIds.length === 0) return [];
-
-      // Para buscar múltiplos documentos por ID, podemos fazer queries individuais
-      const promises = acaoIds.slice(0, 10).map(id => {
-        const acaoRef = doc(firestore, 'acoes', id);
-        return getDoc(acaoRef);
-      });
-
-      const docs = await Promise.all(promises);
-
-      const acoes: Acao[] = [];
-      docs.forEach((doc) => {
-        if (doc.exists()) {
-          const data = doc.data();
-          acoes.push({
-            id: doc.id,
-            titulo: data?.titulo || '',
-            descricao: data?.descricao || '',
-            cidade: data?.cidade || '',
-            estado: data?.estado || '',
-            data: data?.data instanceof Date
-            ? data.data
-            : data?.data?.toDate
-            ? data.data.toDate()
-            : new Date(data.data),
-            horaInicio: data?.horaInicio || '',
-            horaFim: data?.horaFim || '',
-            voluntariosNecessarios: data?.voluntariosNecessarios || 0,
-            voluntariosInscritos: data?.voluntariosInscritos || 0,
-            ongId: data?.organizadorId || '',
-            imagens: data?.imagens || [],
-            metas: data?.metas || [],
-            orientacoes: data?.orientacoes || '',
-            lixoRecolhido: data?.lixoRecolhido || '',
-            metasConcluidas: data?.metasConcluidas || [],
-            createdAt: data?.createdAt,
-          });
-        }
-      });
-
-      return acoes;
-    } catch (error: any) {
-      console.error('Erro ao buscar ações:', error);
-      throw error;
-    }
-  },
-
-  // Buscar ações ativas (para home)
-  async getAcoesAtivas(limitCount: number = 10): Promise<Acao[]> {
-    try {
-      const acoesRef = collection(firestore, 'acoes');
-      const q = query(
-        acoesRef, 
-        orderBy('data', 'asc'),
-        limit(limitCount)
-      );
-
-      const snapshot = await getDocs(q);
-      console.log("Total de docs retornados:", snapshot.size);
-      snapshot.forEach((doc) => {
-        console.log("Doc encontrado:", doc.id, doc.data());
-      }); 
-      const acoes: Acao[] = [];
-
-      snapshot.forEach((doc) => {
-        const info = doc.data();
-        acoes.push({
-          id: doc.id,
-          titulo: info?.titulo || '',
-          descricao: info?.descricao || '',
-          cidade: info?.cidade || '',
-          estado: info?.estado || '',
-          data: info?.data instanceof Date
-            ? info.data
-            : info?.data?.toDate
-            ? info.data.toDate()
-            : new Date(info.data),
-          horaInicio: info?.horaInicio || '',
-          horaFim: info?.horaFim || '',
-          voluntariosNecessarios: info?.voluntariosNecessarios || 0,
-          voluntariosInscritos: info?.voluntariosInscritos || 0,
-          ongId: info?.organizadorId || '',
-          imagens: info?.imagens || [],
-          metas: info?.metas || [],
-          orientacoes: info?.orientacoes || '',
-          lixoRecolhido: info?.lixoRecolhido || '',
-          metasConcluidas: info?.metasConcluidas || [],
-          createdAt: info?.createdAt,
-        });
-      });
-
-      return acoes;
-    } catch (error: any) {
-      console.error('Erro ao buscar ações ativas:', error);
-      throw error;
-    }
-  },
-};
 
 export interface Usuario {
   id?: string;
@@ -435,101 +71,433 @@ export interface Usuario {
   createdAt?: any;
 }
 
-// Serviço de usuário
-export const userService = {
+const normalizarData = (valor: any): Date => {
+  if (valor instanceof Date) return valor;
+  if (valor?.toDate) return valor.toDate();
+  if (valor) return new Date(valor);
+  return new Date();
+};
 
-  // Salvar perfil: verifica em 'ongs' e 'users', atualiza onde existir
-  async salvarPerfil(userId: string, campos: Partial<Omit<Usuario, 'id' | 'createdAt'>>): Promise<void> {
+const montarAcao = (
+  id: string,
+  info: any,
+  statusPadrao: "ativa" | "finalizada" = "ativa"
+): Acao => {
+  return {
+    id,
+    titulo: info?.titulo || "",
+    descricao: info?.descricao || "",
+    cidade: info?.cidade || "",
+    estado: info?.estado || "",
+    data: normalizarData(info?.data),
+    horaInicio: info?.horaInicio || "",
+    horaFim: info?.horaFim || "",
+    voluntariosNecessarios: info?.voluntariosNecessarios || 0,
+    voluntariosInscritos: info?.voluntariosInscritos || 0,
+    ongId: info?.ongId || info?.organizadorId || "",
+    imagens: info?.imagens || [],
+    imagensFinalizacao: info?.imagensFinalizacao || [],
+    metas: info?.metas || [],
+    orientacoes: info?.orientacoes || "",
+    lixoRecolhido: info?.lixoRecolhido || "",
+    metasConcluidas: info?.metasConcluidas || [],
+    status: info?.status || statusPadrao,
+    finalizadoEm: info?.finalizadoEm,
+    acaoOriginalId: info?.acaoOriginalId,
+    createdAt: info?.createdAt,
+  };
+};
+
+export const participacaoService = {
+  async inscreverEmAcao(acaoId: string, userId: string): Promise<string> {
     try {
-      // Verifica nas duas coleções, igual ao AuthContext faz no login
-      const ongRef = doc(firestore, 'ongs', userId);
-      const ongSnap = await getDoc(ongRef);
+      const participacoesRef = collection(firestore, "participacoes");
 
-      if (ongSnap.exists()) {
-        // Usuário é uma ONG → atualiza em 'ongs'
-        await updateDoc(ongRef, {
-          ...campos,
-          updatedAt: serverTimestamp(),
-        });
-        console.log('Perfil ONG atualizado:', userId);
-        return;
-      }
-
-      const userRef = doc(firestore, 'users', userId);
-      const userSnap = await getDoc(userRef);
-
-      if (userSnap.exists()) {
-        // Usuário comum → atualiza em 'users'
-        await updateDoc(userRef, {
-          ...campos,
-          updatedAt: serverTimestamp(),
-        });
-        console.log('Perfil user atualizado:', userId);
-        return;
-      }
-
-      // Não existe em nenhuma → cria em 'users'
-      await setDoc(userRef, {
-        ...campos,
+      const docRef = await addDoc(participacoesRef, {
+        acaoId,
+        userId,
+        dataInscricao: new Date(),
+        status: "confirmado",
         createdAt: serverTimestamp(),
       });
-      console.log('Perfil criado em users:', userId);
+
+      console.log("Inscrição realizada com sucesso:", docRef.id);
+
+      return docRef.id;
     } catch (error: any) {
-      console.error('Erro ao salvar perfil:', error);
+      console.error("Erro ao inscrever em ação:", error);
+      throw error;
+    }
+  },
+
+  async verificarInscricao(acaoId: string, userId: string): Promise<boolean> {
+    try {
+      const participacoesRef = collection(firestore, "participacoes");
+
+      const q = query(
+        participacoesRef,
+        where("acaoId", "==", acaoId),
+        where("userId", "==", userId),
+        limit(1)
+      );
+
+      const snapshot = await getDocs(q);
+
+      return !snapshot.empty;
+    } catch (error: any) {
+      console.error("Erro ao verificar inscrição:", error);
+      throw error;
+    }
+  },
+
+  async getParticipacoesUsuario(userId: string): Promise<Participacao[]> {
+    try {
+      const participacoesRef = collection(firestore, "participacoes");
+
+      // ALTERADO: removido orderBy para evitar índice composto obrigatório no Firebase.
+      const q = query(participacoesRef, where("userId", "==", userId));
+
+      const snapshot = await getDocs(q);
+      const participacoes: Participacao[] = [];
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+
+        participacoes.push({
+          id: docSnap.id,
+          acaoId: data.acaoId,
+          userId: data.userId,
+          dataInscricao: data.dataInscricao?.toDate?.() || new Date(),
+          status: data.status || "confirmado",
+          createdAt: data.createdAt,
+        });
+      });
+
+      return participacoes.sort(
+        (a, b) => b.dataInscricao.getTime() - a.dataInscricao.getTime()
+      );
+    } catch (error: any) {
+      console.error("Erro ao buscar participações:", error);
+      throw error;
+    }
+  },
+
+  async cancelarParticipacao(participacaoId: string): Promise<void> {
+    try {
+      const participacaoRef = doc(firestore, "participacoes", participacaoId);
+
+      await updateDoc(participacaoRef, {
+        status: "cancelado",
+        updatedAt: serverTimestamp(),
+      });
+
+      console.log("Participação cancelada:", participacaoId);
+    } catch (error: any) {
+      console.error("Erro ao cancelar participação:", error);
+      throw error;
+    }
+  },
+
+  async getVoluntariosDaAcao(acaoId: string): Promise<VoluntarioPresenca[]> {
+    try {
+      const participacoesRef = collection(firestore, "participacoes");
+      const q = query(participacoesRef, where("acaoId", "==", acaoId));
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) return [];
+
+      const voluntarios: VoluntarioPresenca[] = [];
+
+      const promises = snapshot.docs.map(async (participacaoDoc) => {
+        const data = participacaoDoc.data();
+
+        const userRef = doc(firestore, "users", data.userId);
+        const userSnap = await getDoc(userRef);
+
+        const nome = userSnap.exists()
+          ? userSnap.data()?.nome || userSnap.data()?.razaoSocial || "Usuário"
+          : "Usuário";
+
+        voluntarios.push({
+          participacaoId: participacaoDoc.id,
+          userId: data.userId,
+          nome,
+          status: data.status || "confirmado",
+        });
+      });
+
+      await Promise.all(promises);
+
+      return voluntarios;
+    } catch (error: any) {
+      console.error("Erro ao buscar voluntários da ação:", error);
+      throw error;
+    }
+  },
+
+  async togglePresenca(
+    participacaoId: string,
+    statusAtual: ParticipacaoStatus
+  ): Promise<"confirmado" | "cancelado"> {
+    try {
+      const novoStatus =
+        statusAtual === "confirmado" ? "cancelado" : "confirmado";
+
+      const participacaoRef = doc(firestore, "participacoes", participacaoId);
+
+      await updateDoc(participacaoRef, {
+        status: novoStatus,
+        updatedAt: serverTimestamp(),
+      });
+
+      console.log("Presença atualizada:", participacaoId, novoStatus);
+
+      return novoStatus;
+    } catch (error: any) {
+      console.error("Erro ao atualizar presença:", error);
       throw error;
     }
   },
 };
 
-// Função auxiliar para buscar histórico do usuário com join manual
+export const acaoService = {
+  async moverParaHistorico(eventoId: string): Promise<void> {
+    try {
+      const eventoRef = doc(firestore, "acoes", eventoId);
+
+      // ALTERADO: histórico agora usa o mesmo ID da ação original.
+      const historicoRef = doc(firestore, "historico", eventoId);
+
+      const eventoSnap = await getDoc(eventoRef);
+
+      if (!eventoSnap.exists()) {
+        throw new Error("Evento não encontrado");
+      }
+
+      const dadosEvento = eventoSnap.data();
+      const batch = writeBatch(firestore);
+
+      batch.set(historicoRef, {
+        ...dadosEvento,
+        acaoOriginalId: eventoId,
+        status: "finalizada",
+        finalizadoEm: serverTimestamp(),
+        movidoEm: serverTimestamp(),
+      });
+
+      batch.delete(eventoRef);
+
+      await batch.commit();
+
+      console.log("Evento movido para histórico:", eventoId);
+    } catch (error) {
+      console.error("Erro ao mover evento:", error);
+      throw error;
+    }
+  },
+
+  async criarAcao(acao: Omit<Acao, "id" | "createdAt">): Promise<string> {
+    try {
+      const acoesRef = collection(firestore, "acoes");
+
+      const docRef = await addDoc(acoesRef, {
+        ...acao,
+        status: acao.status || "ativa",
+        data: Timestamp.fromDate(new Date(acao.data)),
+        createdAt: serverTimestamp(),
+      });
+
+      console.log("Ação criada com sucesso:", docRef.id);
+
+      return docRef.id;
+    } catch (error: any) {
+      console.error("Erro ao criar ação:", error);
+      throw error;
+    }
+  },
+
+  async editarAcao(
+    acaoId: string,
+    campos: Partial<Omit<Acao, "id" | "createdAt">>
+  ): Promise<void> {
+    try {
+      const acaoRef = doc(firestore, "acoes", acaoId);
+
+      await updateDoc(acaoRef, {
+        ...campos,
+        updatedAt: serverTimestamp(),
+      });
+
+      console.log("Ação editada com sucesso:", acaoId);
+    } catch (error: any) {
+      console.error("Erro ao editar ação:", error);
+      throw error;
+    }
+  },
+
+  async getAcaoById(acaoId: string): Promise<Acao | null> {
+    try {
+      const acaoRef = doc(firestore, "acoes", acaoId);
+      const acaoDoc = await getDoc(acaoRef);
+
+      if (!acaoDoc.exists()) {
+        return null;
+      }
+
+      return montarAcao(acaoDoc.id, acaoDoc.data(), "ativa");
+    } catch (error: any) {
+      console.error("Erro ao buscar ação:", error);
+      throw error;
+    }
+  },
+
+  // ALTERADO: busca ação finalizada na collection historico.
+  async getHistoricoById(acaoId: string): Promise<Acao | null> {
+    try {
+      const historicoRef = doc(firestore, "historico", acaoId);
+      const historicoDoc = await getDoc(historicoRef);
+
+      if (!historicoDoc.exists()) {
+        return null;
+      }
+
+      return montarAcao(historicoDoc.id, historicoDoc.data(), "finalizada");
+    } catch (error: any) {
+      console.error("Erro ao buscar histórico:", error);
+      throw error;
+    }
+  },
+
+  async getAcoesByIds(acaoIds: string[]): Promise<Acao[]> {
+    try {
+      if (acaoIds.length === 0) return [];
+
+      const promises = acaoIds.slice(0, 10).map(async (id) => {
+        const acaoRef = doc(firestore, "acoes", id);
+        const acaoSnap = await getDoc(acaoRef);
+
+        if (acaoSnap.exists()) {
+          return montarAcao(acaoSnap.id, acaoSnap.data(), "ativa");
+        }
+
+        const historicoRef = doc(firestore, "historico", id);
+        const historicoSnap = await getDoc(historicoRef);
+
+        if (historicoSnap.exists()) {
+          return montarAcao(historicoSnap.id, historicoSnap.data(), "finalizada");
+        }
+
+        return null;
+      });
+
+      const resultados = await Promise.all(promises);
+
+      return resultados.filter((acao): acao is Acao => acao !== null);
+    } catch (error: any) {
+      console.error("Erro ao buscar ações:", error);
+      throw error;
+    }
+  },
+
+  async getAcoesAtivas(limitCount: number = 10): Promise<Acao[]> {
+    try {
+      const acoesRef = collection(firestore, "acoes");
+      const q = query(acoesRef, orderBy("data", "asc"), limit(limitCount));
+
+      const snapshot = await getDocs(q);
+      const acoes: Acao[] = [];
+
+      snapshot.forEach((docSnap) => {
+        acoes.push(montarAcao(docSnap.id, docSnap.data(), "ativa"));
+      });
+
+      return acoes;
+    } catch (error: any) {
+      console.error("Erro ao buscar ações ativas:", error);
+      throw error;
+    }
+  },
+};
+
+export const userService = {
+  async salvarPerfil(
+    userId: string,
+    campos: Partial<Omit<Usuario, "id" | "createdAt">>
+  ): Promise<void> {
+    try {
+      const ongRef = doc(firestore, "ongs", userId);
+      const ongSnap = await getDoc(ongRef);
+
+      if (ongSnap.exists()) {
+        await updateDoc(ongRef, {
+          ...campos,
+          updatedAt: serverTimestamp(),
+        });
+
+        console.log("Perfil ONG atualizado:", userId);
+
+        return;
+      }
+
+      const userRef = doc(firestore, "users", userId);
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists()) {
+        await updateDoc(userRef, {
+          ...campos,
+          updatedAt: serverTimestamp(),
+        });
+
+        console.log("Perfil user atualizado:", userId);
+
+        return;
+      }
+
+      await setDoc(userRef, {
+        ...campos,
+        createdAt: serverTimestamp(),
+      });
+
+      console.log("Perfil criado em users:", userId);
+    } catch (error: any) {
+      console.error("Erro ao salvar perfil:", error);
+      throw error;
+    }
+  },
+};
+
 export const getHistoricoUsuario = async (userId: string) => {
   try {
-    // 1. Buscar todas as participações do usuário
-    const participacoes = await participacaoService.getParticipacoesUsuario(userId);
+    const participacoes = await participacaoService.getParticipacoesUsuario(
+      userId
+    );
 
     if (participacoes.length === 0) {
       return [];
     }
 
-    // 2. Extrair IDs das ações únicas
-    const acaoIds = [...new Set(participacoes.map(p => p.acaoId))];
-
-    // 3. Buscar informações das ações correspondentes
+    const acaoIds = [...new Set(participacoes.map((p) => p.acaoId))];
     const acoes = await acaoService.getAcoesByIds(acaoIds);
+    const acoesMap = new Map(acoes.map((acao) => [acao.id, acao]));
 
-    // 4. Criar mapa de ações para acesso rápido
-    const acoesMap = new Map(acoes.map(acao => [acao.id, acao]));
-
-    // 5. Combinar dados (join manual)
-    const historicoCompleto = participacoes.map(participacao => {
+    return participacoes.map((participacao) => {
       const acao = acoesMap.get(participacao.acaoId);
+
       return {
         participacao,
         acao: acao || null,
       };
     });
-
-    return historicoCompleto;
   } catch (error: any) {
-    console.error('Erro ao buscar histórico do usuário:', error);
+    console.error("Erro ao buscar histórico do usuário:", error);
     throw error;
   }
 };
 
-// Função para mostrar alerta de sucesso
 export const showSuccessAlert = (message: string) => {
-  Alert.alert(
-    'Sucesso!',
-    message,
-    [{ text: 'OK', style: 'default' }]
-  );
+  Alert.alert("Sucesso!", message, [{ text: "OK", style: "default" }]);
 };
 
-// Função para mostrar alerta de erro
 export const showErrorAlert = (message: string) => {
-  Alert.alert(
-    'Erro',
-    message,
-    [{ text: 'OK', style: 'cancel' }]
-  );
+  Alert.alert("Erro", message, [{ text: "OK", style: "cancel" }]);
 };

@@ -178,7 +178,11 @@ export default function HomeOngScreen() {
         }),
       });
 
-      acaoService.moverParaHistorico(acaoSelecionada.id);
+      await acaoService.moverParaHistorico(acaoSelecionada.id);
+
+      setAcoes((prev) =>
+        prev.filter((acao) => acao.id !== acaoSelecionada.id)
+      );
 
       showSuccessAlert("Ação finalizada com sucesso!");
       fecharModal();
