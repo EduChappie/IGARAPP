@@ -1,12 +1,25 @@
+// home_ong.tsx
+// MERGE: Base visual do CÓDIGO 2 + Lógica Firebase/Cloudinary do CÓDIGO 1
+
 import { useAuth } from "@/src/contexts/AuthContext";
-import { acaoService, participacaoService, Acao, VoluntarioPresenca, showSuccessAlert, showErrorAlert } from "@/src/services/firebase/firestoreService";
+import {
+  acaoService,
+  participacaoService,
+  Acao,
+  VoluntarioPresenca,
+  showSuccessAlert,
+  showErrorAlert,
+} from "@/src/services/firebase/firestoreService";
+import { uploadMultiplasImagens } from "@/src/services/cloudnaryService";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
+import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   FlatList,
   Image,
@@ -39,13 +52,11 @@ import Svg, {
 
 const { width, height } = Dimensions.get("window");
 
-export default function HomeUserScreen() {
+export default function HomeOngScreen() {
   const router = useRouter();
   const { user } = useAuth();
 
-  // ==========================================
-  // ESTADO DO FEED
-  // ==========================================
+  // ── Feed ──────────────────────────────────────────────────────────────────
   const [acoes, setAcoes] = useState<Acao[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -60,10 +71,10 @@ export default function HomeUserScreen() {
         setLoading(false);
       }
     };
-
     carregarAcoes();
   }, []);
 
+  // ── Modal de finalizar ────────────────────────────────────────────────────
   const [modalVisible, setModalVisible] = useState(false);
   const [acaoSelecionada, setAcaoSelecionada] = useState<any>(null);
   const [lixoRecolhido, setLixoRecolhido] = useState("");
@@ -71,18 +82,47 @@ export default function HomeUserScreen() {
   const [buscaVoluntario, setBuscaVoluntario] = useState("");
   const [loadingFinalizar, setLoadingFinalizar] = useState(false);
 
-  // ==========================================
-  // ESTADO DOS VOLUNTÁRIOS (substituiu o mock)
-  // ==========================================
+  // ── Voluntários ───────────────────────────────────────────────────────────
   const [voluntarios, setVoluntarios] = useState<VoluntarioPresenca[]>([]);
   const [loadingVoluntarios, setLoadingVoluntarios] = useState(false);
 
+  // ── Fotos da ação finalizada ("depois") ───────────────────────────────────
+  const [fotosFinalizacaoUri, setFotosFinalizacaoUri] = useState<string[]>([]);
+  const [uploadandoFotos, setUploadandoFotos] = useState(false);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Selecionar fotos da ação finalizada (máx 5)
+  // ─────────────────────────────────────────────────────────────────────────
+  const selecionarFotosFinalizacao = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permissão negada", "Precisamos acessar sua galeria.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 0.8,
+      selectionLimit: 5,
+    });
+    if (!result.canceled && result.assets.length > 0) {
+      const uris = result.assets.map((a) => a.uri);
+      setFotosFinalizacaoUri((prev) => [...prev, ...uris].slice(0, 5));
+    }
+  };
+
+  const removerFotoFinalizacao = (index: number) => {
+    setFotosFinalizacaoUri((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
   const abrirModalFinalizar = (cardData: any, acaoOriginal: Acao) => {
     setAcaoSelecionada({ ...cardData, metas: acaoOriginal.metas });
     setLixoRecolhido("");
     setMetasConcluidas([]);
     setBuscaVoluntario("");
     setVoluntarios([]);
+    setFotosFinalizacaoUri([]);
     setModalVisible(true);
   };
 
@@ -91,48 +131,63 @@ export default function HomeUserScreen() {
     setTimeout(() => setAcaoSelecionada(null), 300);
   };
 
-  // Popula campos já salvos e carrega voluntários ao abrir o modal
   useEffect(() => {
     if (!modalVisible || !acaoSelecionada?.id) return;
 
-    // Carrega dados já salvos na ação
     acaoService.getAcaoById(acaoSelecionada.id).then((acao) => {
       if (!acao) return;
-      setLixoRecolhido(acao.lixoRecolhido || '');
+      setLixoRecolhido(acao.lixoRecolhido || "");
       setMetasConcluidas(acao.metasConcluidas || []);
     });
 
-    // Carrega voluntários inscritos nessa ação
     setLoadingVoluntarios(true);
-    participacaoService.getVoluntariosDaAcao(acaoSelecionada.id)
+    participacaoService
+      .getVoluntariosDaAcao(acaoSelecionada.id)
       .then(setVoluntarios)
-      .catch(() => showErrorAlert('Erro ao carregar lista de voluntários.'))
+      .catch(() => showErrorAlert("Erro ao carregar lista de voluntários."))
       .finally(() => setLoadingVoluntarios(false));
-
   }, [modalVisible, acaoSelecionada?.id]);
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Finalizar ação
+  // ─────────────────────────────────────────────────────────────────────────
   const handleFinalizarAcao = async () => {
     if (!acaoSelecionada?.id) {
-      showErrorAlert('Ação inválida. Tente novamente.');
+      showErrorAlert("Ação inválida. Tente novamente.");
       return;
     }
 
     try {
       setLoadingFinalizar(true);
 
+      let urlsFotosFinalizacao: string[] = [];
+      if (fotosFinalizacaoUri.length > 0) {
+        setUploadandoFotos(true);
+        urlsFotosFinalizacao = await uploadMultiplasImagens(
+          fotosFinalizacaoUri,
+          "acao",
+        );
+        setUploadandoFotos(false);
+      }
+
       await acaoService.editarAcao(acaoSelecionada.id, {
         lixoRecolhido: lixoRecolhido.trim(),
         metasConcluidas,
+        ...(urlsFotosFinalizacao.length > 0 && {
+          imagensFinalizacao: urlsFotosFinalizacao,
+        }),
       });
 
-      acaoService.moverParaHistorico(acaoSelecionada?.id);
+      acaoService.moverParaHistorico(acaoSelecionada.id);
 
-      showSuccessAlert('Ação finalizada com sucesso!');
+      showSuccessAlert("Ação finalizada com sucesso!");
       fecharModal();
     } catch (error) {
-      showErrorAlert('Não foi possível finalizar a ação. Tente novamente.');
+      console.error("Erro ao finalizar:", error);
+      showErrorAlert("Não foi possível finalizar a ação. Tente novamente.");
     } finally {
       setLoadingFinalizar(false);
+      setUploadandoFotos(false);
     }
   };
 
@@ -144,7 +199,6 @@ export default function HomeUserScreen() {
     }
   };
 
-  // Alterna presença e atualiza estado local sem recarregar tudo
   const handleTogglePresenca = async (voluntario: VoluntarioPresenca) => {
     try {
       const novoStatus = await participacaoService.togglePresenca(
@@ -159,7 +213,7 @@ export default function HomeUserScreen() {
         ),
       );
     } catch {
-      showErrorAlert('Erro ao atualizar presença.');
+      showErrorAlert("Erro ao atualizar presença.");
     }
   };
 
@@ -173,7 +227,11 @@ export default function HomeUserScreen() {
       locations={[0, 0.3, 1]}
       style={styles.mainContainer}
     >
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="transparent"
+        translucent
+      />
 
       {/* CONTEÚDO PRINCIPAL ROLÁVEL */}
       <ScrollView
@@ -188,8 +246,12 @@ export default function HomeUserScreen() {
                 <LogoTelaInicialSVG />
               </View>
               <View>
-                <Text style={styles.greetingText}>Olá, {user?.razaoSocial}</Text>
-                <Text style={styles.userNameText}>Pronto para salvar a amazônia hoje?</Text>
+                <Text style={styles.greetingText}>
+                  Olá, {user?.razaoSocial}
+                </Text>
+                <Text style={styles.userNameText}>
+                  Pronto para salvar a amazônia hoje?
+                </Text>
               </View>
             </View>
 
@@ -212,10 +274,14 @@ export default function HomeUserScreen() {
             />
           </View>
 
-          {/* LISTA DE CARDS (FEED) */}
+          {/* FEED */}
           <View style={styles.feedContainer}>
             {loading ? (
-              <ActivityIndicator size="large" color="#91CB3E" style={{ marginTop: 40 }} />
+              <ActivityIndicator
+                size="large"
+                color="#91CB3E"
+                style={{ marginTop: 40 }}
+              />
             ) : (
               acoes.map((acao) => {
                 const cardData = {
@@ -226,9 +292,10 @@ export default function HomeUserScreen() {
                   volunteers: `${acao.voluntariosInscritos} Voluntários`,
                   date: acao.data.toLocaleDateString("pt-BR"),
                   time: `${acao.horaInicio} - ${acao.horaFim}`,
-                  images: acao.imagens.length > 0
-                    ? acao.imagens.map((url) => ({ uri: url }))
-                    : [require("../src/assets/image_card_1.png")],
+                  images:
+                    acao.imagens && acao.imagens.length > 0
+                      ? acao.imagens.map((url) => ({ uri: url }))
+                      : [require("../src/assets/image_card_1.png")],
                 };
 
                 return (
@@ -236,7 +303,9 @@ export default function HomeUserScreen() {
                     key={cardData.id}
                     data={cardData}
                     onPressCard={() => abrirModalFinalizar(cardData, acao)}
-                    onPressEditar={() => router.push(`./editar_acao?id=${acao.id}`)}
+                    onPressEditar={() =>
+                      router.push(`./editar_acao?id=${acao.id}`)
+                    }
                   />
                 );
               })
@@ -245,7 +314,7 @@ export default function HomeUserScreen() {
         </SafeAreaView>
       </ScrollView>
 
-      {/* MODAL */}
+      {/* ── MODAL ─────────────────────────────────────────────────────────── */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -261,14 +330,14 @@ export default function HomeUserScreen() {
             tint="dark"
             style={StyleSheet.absoluteFillObject}
           />
-      
+
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <CloseGlassButton onPress={fecharModal} />
               <Text style={styles.modalTitle}>Finalizar Ação</Text>
               <View style={{ width: 44 }} />
             </View>
-      
+
             <ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: 20 }}
@@ -279,7 +348,7 @@ export default function HomeUserScreen() {
                   ? acaoSelecionada.date + " • " + acaoSelecionada.time
                   : ""}
               </Text>
-      
+
               {/* Quantidade de Lixo */}
               <View style={styles.modalSection}>
                 <Text style={styles.modalSectionTitle}>
@@ -302,7 +371,7 @@ export default function HomeUserScreen() {
                   />
                 </View>
               </View>
-      
+
               {/* Checklist de Metas */}
               <View style={styles.modalSection}>
                 <Text style={styles.modalSectionTitle}>Checklist de Metas</Text>
@@ -346,15 +415,45 @@ export default function HomeUserScreen() {
                   },
                 )}
               </View>
-      
-              {/* Fotos */}
+
+              {/* ── FOTOS DA AÇÃO FINALIZADA ─────────────────────────────── */}
               <View style={styles.modalSection}>
                 <Text style={styles.modalSectionTitle}>
                   Fotos da Ação Finalizada
                 </Text>
+
+                {/* Preview das fotos selecionadas */}
+                {fotosFinalizacaoUri.length > 0 && (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={{ marginBottom: 12 }}
+                    contentContainerStyle={{ gap: 10, paddingHorizontal: 2 }}
+                  >
+                    {fotosFinalizacaoUri.map((uri, index) => (
+                      <View key={index} style={styles.previewImageWrapper}>
+                        <Image source={{ uri }} style={styles.previewImage} />
+                        <TouchableOpacity
+                          style={styles.previewRemoveBtn}
+                          onPress={() => removerFotoFinalizacao(index)}
+                        >
+                          <Ionicons
+                            name="close-circle"
+                            size={20}
+                            color="#FFF"
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </ScrollView>
+                )}
+
+                {/* Botão de seleção / área de upload */}
                 <TouchableOpacity
                   style={styles.uploadMainContainer}
                   activeOpacity={0.8}
+                  onPress={selecionarFotosFinalizacao}
+                  disabled={uploadandoFotos}
                 >
                   <View style={styles.uploadDashedArea}>
                     <LinearGradient
@@ -362,20 +461,33 @@ export default function HomeUserScreen() {
                       style={StyleSheet.absoluteFillObject}
                     />
                     <View style={styles.uploadContent}>
-                      <Text style={styles.uploadTitle}>
-                        Adicionar fotos do evento
-                      </Text>
-                      <View style={styles.uploadIconCircle}>
-                        <UploadIconSVG />
-                      </View>
-                      <Text style={styles.uploadSub}>
-                        Toque para fazer upload das imagens da ação finalizada
-                      </Text>
+                      {uploadandoFotos ? (
+                        <>
+                          <ActivityIndicator color="#EEE82C" size="large" />
+                          <Text style={styles.uploadTitle}>
+                            Enviando fotos...
+                          </Text>
+                        </>
+                      ) : (
+                        <>
+                          <Text style={styles.uploadTitle}>
+                            {fotosFinalizacaoUri.length > 0
+                              ? `${fotosFinalizacaoUri.length} foto(s) — toque para adicionar mais`
+                              : "Adicionar fotos do evento"}
+                          </Text>
+                          <View style={styles.uploadIconCircle}>
+                            <UploadIconSVG />
+                          </View>
+                          <Text style={styles.uploadSub}>
+                            Toque para fazer upload · Máx 5 imagens
+                          </Text>
+                        </>
+                      )}
                     </View>
                   </View>
                 </TouchableOpacity>
               </View>
-      
+
               {/* Lista de Presença */}
               <View style={styles.modalSection}>
                 <Text style={styles.modalSectionTitle}>Lista de Presença</Text>
@@ -394,9 +506,11 @@ export default function HomeUserScreen() {
                   />
                 </View>
 
-                {/* Lista real do Firestore */}
                 {loadingVoluntarios ? (
-                  <ActivityIndicator color="#EEE82C" style={{ marginTop: 16 }} />
+                  <ActivityIndicator
+                    color="#EEE82C"
+                    style={{ marginTop: 16 }}
+                  />
                 ) : voluntariadosFiltrados.length === 0 ? (
                   <Text style={styles.semVoluntariosText}>
                     Nenhum voluntário inscrito.
@@ -404,7 +518,10 @@ export default function HomeUserScreen() {
                 ) : (
                   <View style={styles.voluntariosList}>
                     {voluntariadosFiltrados.map((voluntario) => (
-                      <View key={voluntario.participacaoId} style={styles.voluntarioRow}>
+                      <View
+                        key={voluntario.participacaoId}
+                        style={styles.voluntarioRow}
+                      >
                         <View style={styles.voluntarioInfo}>
                           <View style={styles.voluntarioAvatar}>
                             <Text style={styles.voluntarioAvatarText}>
@@ -418,15 +535,21 @@ export default function HomeUserScreen() {
                         <TouchableOpacity
                           style={[
                             styles.presencaBtn,
-                            voluntario.status === 'cancelado' && styles.presencaBtnAusente,
+                            voluntario.status === "cancelado" &&
+                              styles.presencaBtnAusente,
                           ]}
                           onPress={() => handleTogglePresenca(voluntario)}
                         >
-                          <Text style={[
-                            styles.presencaBtnText,
-                            voluntario.status === 'cancelado' && styles.presencaBtnTextAusente,
-                          ]}>
-                            {voluntario.status === 'confirmado' ? 'Presente' : 'Ausente'}
+                          <Text
+                            style={[
+                              styles.presencaBtnText,
+                              voluntario.status === "cancelado" &&
+                                styles.presencaBtnTextAusente,
+                            ]}
+                          >
+                            {voluntario.status === "confirmado"
+                              ? "Presente"
+                              : "Ausente"}
                           </Text>
                         </TouchableOpacity>
                       </View>
@@ -435,7 +558,8 @@ export default function HomeUserScreen() {
                 )}
               </View>
             </ScrollView>
-      
+
+            {/* Rodapé com botões */}
             <View style={styles.modalFooter}>
               <TouchableOpacity
                 style={styles.modalButtonVoltar}
@@ -443,11 +567,14 @@ export default function HomeUserScreen() {
               >
                 <Text style={styles.modalButtonVoltarText}>Voltar</Text>
               </TouchableOpacity>
-      
+
               <TouchableOpacity
-                style={[styles.modalButtonFinalizar, loadingFinalizar && { opacity: 0.7 }]}
+                style={[
+                  styles.modalButtonFinalizar,
+                  (loadingFinalizar || uploadandoFotos) && { opacity: 0.7 },
+                ]}
                 onPress={handleFinalizarAcao}
-                disabled={loadingFinalizar}
+                disabled={loadingFinalizar || uploadandoFotos}
               >
                 {loadingFinalizar ? (
                   <ActivityIndicator color="#001A23" />
@@ -465,9 +592,8 @@ export default function HomeUserScreen() {
   );
 }
 
-// ==========================================
-// COMPONENTE DO CARD COM CARROSSEL ANIMADO
-// ==========================================
+// ── Card com carrossel animado ─────────────────────────────────────────────────
+
 const ProjectCard = ({
   data,
   onPressCard,
@@ -540,6 +666,7 @@ const ProjectCard = ({
             keyExtractor={(_, index) => index.toString()}
             renderItem={({ item }) => (
               <View style={styles.imageWrapper}>
+                {/* item pode ser { uri: "..." } (Cloudinary) ou require(...) (local) */}
                 <Image source={item} style={styles.cardImage} />
               </View>
             )}
@@ -595,9 +722,7 @@ const ProjectCard = ({
   );
 };
 
-// ==========================================
-// ÍCONES SVG INLINE
-// ==========================================
+// ── Ícones SVG inline ──────────────────────────────────────────────────────────
 
 const UploadIconSVG = () => (
   <Svg width="23" height="23" viewBox="0 0 23 23" fill="none">
@@ -720,15 +845,13 @@ const LogoTelaInicialSVG = () => (
 
 const VerifiedPeixinhoBadge = () => (
   <Svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-    <G>
-      <Path
-        d="M6.59277 0.466797C7.24872 -0.155604 8.27765 -0.155604 8.93359 0.466797L9.52637 1.0293C9.86833 1.35377 10.3303 1.52192 10.8008 1.49316L11.6172 1.44336C12.5194 1.38848 13.3066 2.04924 13.4092 2.94727L13.502 3.76074C13.5554 4.22896 13.8009 4.65423 14.1797 4.93457L14.8369 5.4209C15.5637 5.95876 15.743 6.97155 15.2441 7.72559L14.792 8.40723C14.5319 8.80021 14.4468 9.28393 14.5566 9.74219L14.748 10.5381C14.9589 11.4171 14.4448 12.3074 13.5781 12.5645L12.7939 12.7969C12.342 12.9308 11.9653 13.2462 11.7549 13.668L11.3896 14.4004C10.9861 15.2093 10.0205 15.5605 9.19141 15.2002L8.44043 14.875C8.00817 14.6871 7.5172 14.6871 7.08496 14.875L6.33496 15.2002C5.50571 15.5607 4.53925 15.2096 4.13574 14.4004L3.77148 13.668C3.56111 13.2462 3.18436 12.9308 2.73242 12.7969L1.94824 12.5645C1.08148 12.3075 0.567422 11.4172 0.77832 10.5381L0.96875 9.74219C1.07867 9.28388 0.993511 8.80026 0.733398 8.40723L0.282227 7.72559C-0.216688 6.97163 -0.0381256 5.95883 0.688477 5.4209L1.34668 4.93457C1.72543 4.65422 1.97095 4.22891 2.02441 3.76074L2.11621 2.94727C2.21879 2.04913 3.00687 1.38836 3.90918 1.44336L4.72559 1.49316C5.19611 1.52192 5.65804 1.35377 6 1.0293L6.59277 0.466797ZM9.27832 4.63672C9.15421 4.62553 9.02944 4.64938 8.91797 4.70508C8.80665 4.76074 8.71299 4.84635 8.64746 4.95215C8.58192 5.0582 8.54688 5.181 8.54688 5.30566V6.51855C8.26255 6.52392 7.99091 6.53551 7.74121 6.55859C7.73996 6.43433 7.71217 6.31163 7.65918 6.19922C7.60606 6.08663 7.5289 5.98633 7.43359 5.90625C7.34052 5.8275 7.2309 5.77041 7.11328 5.73828C6.99564 5.70617 6.87216 5.70017 6.75195 5.7207C6.27712 5.80788 5.84779 6.05837 5.53809 6.42871C5.22832 6.79913 5.05739 7.26616 5.05566 7.74902V7.89258C4.71874 8.52181 4.53581 9.22193 4.52148 9.93555C4.51207 10.0817 4.5327 10.2283 4.58203 10.3662C4.6314 10.5042 4.70853 10.6312 4.80859 10.7383C4.90861 10.8452 5.02984 10.9307 5.16406 10.9893C5.2983 11.0478 5.44341 11.0786 5.58984 11.0791C6.66735 11.079 8.17096 10.5119 8.6543 9.46777H9.01074C9.22186 9.46666 9.42556 9.3894 9.58496 9.25098C9.74429 9.11253 9.84923 8.92172 9.87988 8.71289C9.89731 8.60618 9.89082 8.4966 9.86133 8.39258C9.83183 8.28855 9.77983 8.19204 9.70898 8.11035C9.63817 8.02877 9.54989 7.96379 9.45117 7.91992C9.35253 7.87615 9.24559 7.85432 9.1377 7.85645H9.03906C9.06215 7.607 9.07373 7.33567 9.0791 7.05078H10.292C10.4163 7.05121 10.5387 7.01739 10.6445 6.95215C10.7503 6.88692 10.8352 6.79284 10.8906 6.68164C10.947 6.57005 10.9709 6.44485 10.96 6.32031C10.949 6.19584 10.904 6.0766 10.8291 5.97656C10.6538 5.73528 10.4012 5.56115 10.1133 5.4834C10.0356 5.19599 9.8618 4.94375 9.62109 4.76855C9.52136 4.69375 9.40248 4.64792 9.27832 4.63672ZM5.27051 8.72168C5.66103 8.81348 6.01895 9.01235 6.30273 9.2959C6.58637 9.5794 6.78485 9.93683 6.87695 10.3271C6.46968 10.4479 6.04923 10.5201 5.625 10.542C5.54922 10.5467 5.47337 10.5346 5.40234 10.5078C5.33115 10.4809 5.26574 10.4396 5.21191 10.3857C5.15808 10.3319 5.11678 10.2665 5.08984 10.1953C5.06301 10.1243 5.05101 10.0484 5.05566 9.97266C5.07773 9.54878 5.14989 9.12863 5.27051 8.72168ZM8.54492 7.05273C8.51619 8.72788 8.20519 9.64082 7.37402 10.1143C7.25037 9.66229 7.01098 9.25031 6.67969 8.91895C6.3482 8.58751 5.93556 8.34823 5.4834 8.22461C5.95626 7.39274 6.86963 7.08147 8.54492 7.05273ZM5.86133 9.46777C5.79031 9.46783 5.72216 9.49575 5.67188 9.5459C5.62152 9.59626 5.59277 9.66511 5.59277 9.73633C5.59284 9.80745 5.62158 9.87548 5.67188 9.92578C5.72218 9.97607 5.7902 10.0048 5.86133 10.0049C5.93254 10.0049 6.0014 9.97614 6.05176 9.92578C6.10189 9.87551 6.12982 9.80733 6.12988 9.73633C6.12988 9.66512 6.1021 9.59625 6.05176 9.5459C6.0014 9.49554 5.93254 9.46777 5.86133 9.46777ZM9.1377 8.39355C9.1687 8.39145 9.19979 8.39637 9.22852 8.4082C9.25741 8.42016 9.28316 8.43932 9.30371 8.46289C9.32416 8.48638 9.33975 8.51382 9.34766 8.54395C9.35557 8.57418 9.35598 8.60612 9.34961 8.63672C9.33761 8.71808 9.29649 8.79279 9.23438 8.84668C9.17231 8.90038 9.09283 8.93026 9.01074 8.93066H8.84863C8.89823 8.75399 8.93778 8.57459 8.96777 8.39355H9.1377ZM6.97461 6.25586C7.01623 6.26763 7.05437 6.28889 7.08691 6.31738C7.12349 6.34808 7.15365 6.38641 7.17383 6.42969C7.19386 6.4728 7.20408 6.51984 7.2041 6.56738V6.62988C6.66482 6.70078 6.1489 6.89463 5.69629 7.19629C5.7894 6.95264 5.94429 6.73725 6.14551 6.57129C6.34696 6.40528 6.58854 6.29389 6.8457 6.24902C6.88848 6.24163 6.93282 6.24411 6.97461 6.25586ZM9.2334 5.17285C9.25895 5.17518 9.28345 5.18445 9.30371 5.2002C9.39251 5.26534 9.46703 5.34819 9.52246 5.44336C9.57779 5.53837 9.61307 5.64375 9.62598 5.75293C9.63521 5.80801 9.66169 5.85893 9.70117 5.89844C9.74069 5.93795 9.79156 5.9644 9.84668 5.97363C9.95584 5.98655 10.0612 6.02185 10.1562 6.07715C10.2514 6.13255 10.3343 6.20719 10.3994 6.2959C10.415 6.31621 10.4246 6.34072 10.4268 6.36621C10.4289 6.39182 10.4232 6.41772 10.4111 6.44043C10.4005 6.46291 10.3835 6.48211 10.3623 6.49512C10.3412 6.50798 10.3167 6.51438 10.292 6.51367H9.08398V5.30566C9.08369 5.28087 9.09024 5.25629 9.10352 5.23535C9.11689 5.21443 9.13656 5.19772 9.15918 5.1875C9.18194 5.17569 9.20787 5.17054 9.2334 5.17285Z"
-        fill="url(#paint0_radial_295_774)"
-      />
-    </G>
+    <Path
+      d="M6.59277 0.466797C7.24872 -0.155604 8.27765 -0.155604 8.93359 0.466797L9.52637 1.0293C9.86833 1.35377 10.3303 1.52192 10.8008 1.49316L11.6172 1.44336C12.5194 1.38848 13.3066 2.04924 13.4092 2.94727L13.502 3.76074C13.5554 4.22896 13.8009 4.65423 14.1797 4.93457L14.8369 5.4209C15.5637 5.95876 15.743 6.97155 15.2441 7.72559L14.792 8.40723C14.5319 8.80021 14.4468 9.28393 14.5566 9.74219L14.748 10.5381C14.9589 11.4171 14.4448 12.3074 13.5781 12.5645L12.7939 12.7969C12.342 12.9308 11.9653 13.2462 11.7549 13.668L11.3896 14.4004C10.9861 15.2093 10.0205 15.5605 9.19141 15.2002L8.44043 14.875C8.00817 14.6871 7.5172 14.6871 7.08496 14.875L6.33496 15.2002C5.50571 15.5607 4.53925 15.2096 4.13574 14.4004L3.77148 13.668C3.56111 13.2462 3.18436 12.9308 2.73242 12.7969L1.94824 12.5645C1.08148 12.3075 0.567422 11.4172 0.77832 10.5381L0.96875 9.74219C1.07867 9.28388 0.993511 8.80026 0.733398 8.40723L0.282227 7.72559C-0.216688 6.97163 -0.0381256 5.95883 0.688477 5.4209L1.34668 4.93457C1.72543 4.65422 1.97095 4.22891 2.02441 3.76074L2.11621 2.94727C2.21879 2.04913 3.00687 1.38836 3.90918 1.44336L4.72559 1.49316C5.19611 1.52192 5.65804 1.35377 6 1.0293L6.59277 0.466797Z"
+      fill="url(#paint0_radial_home_ong)"
+    />
     <Defs>
       <RadialGradient
-        id="paint0_radial_295_774"
+        id="paint0_radial_home_ong"
         cx="0"
         cy="0"
         r="1"
@@ -762,7 +885,7 @@ const SearchIcon = () => (
 const HappyFaceIcon = () => (
   <Svg width="10" height="10" viewBox="0 0 10 10" fill="none">
     <Path
-      d="M5 10C4.0111 10 3.0444 9.70676 2.22215 9.15735C1.39991 8.60794 0.759043 7.82705 0.380605 6.91342C0.00216643 5.99979 -0.0968503 4.99446 0.0960758 4.02455C0.289002 3.05465 0.765206 2.16373 1.46447 1.46447C2.16373 0.765206 3.05465 0.289002 4.02455 0.0960758C4.99446 -0.0968503 5.99979 0.00216643 6.91342 0.380605C7.82705 0.759043 8.60794 1.39991 9.15735 2.22215C9.70676 3.0444 10 4.0111 10 5C9.99857 6.32564 9.47132 7.59658 8.53395 8.53395C7.59658 9.47132 6.32564 9.99857 5 10V10ZM5 0.833336C4.17591 0.833336 3.37033 1.07771 2.68513 1.53555C1.99992 1.99338 1.46587 2.64413 1.1505 3.40549C0.835139 4.16685 0.752625 5.00462 0.913397 5.81288C1.07417 6.62113 1.47101 7.36356 2.05372 7.94628C2.63644 8.529 3.37887 8.92584 4.18713 9.08661C4.99538 9.24738 5.83316 9.16487 6.59452 8.8495C7.35588 8.53414 8.00662 8.00008 8.46446 7.31488C8.9223 6.62967 9.16667 5.82409 9.16667 5C9.16546 3.89531 8.72608 2.8362 7.94494 2.05506C7.1638 1.27393 6.1047 0.834549 5 0.833336V0.833336ZM7.36084 6.56084C7.44338 6.48735 7.49336 6.38408 7.49977 6.27375C7.50617 6.16341 7.46849 6.05505 7.395 5.9725C7.32151 5.88995 7.21825 5.83998 7.10791 5.83357C6.99758 5.82716 6.88922 5.86485 6.80667 5.93834C6.29731 6.3672 5.66439 6.62235 5 6.66667C4.33601 6.62239 3.70343 6.36754 3.19417 5.93917C3.11173 5.86557 3.00343 5.82774 2.8931 5.83399C2.78276 5.84024 2.67943 5.89006 2.60584 5.9725C2.53224 6.05494 2.4944 6.16324 2.50065 6.27357C2.50691 6.38391 2.55673 6.48724 2.63917 6.56084C3.30078 7.12606 4.13093 7.4563 5 7.5C5.86908 7.4563 6.69922 7.12606 7.36084 6.56084ZM2.5 4.16667C2.5 4.58334 2.87292 4.58334 3.33334 4.58334C3.79375 4.58334 4.16667 4.58334 4.16667 4.16667C4.16667 3.94566 4.07887 3.73369 3.92259 3.57741C3.76631 3.42113 3.55435 3.33334 3.33334 3.33334C3.11232 3.33334 2.90036 3.42113 2.74408 3.57741C2.5878 3.73369 2.5 3.94566 2.5 4.16667V4.16667ZM5.83334 4.16667C5.83334 4.58334 6.20625 4.58334 6.66667 4.58334C7.12709 4.58334 7.5 4.58334 7.5 4.16667C7.5 3.94566 7.4122 3.73369 7.25592 3.57741C7.09964 3.42113 6.88768 3.33334 6.66667 3.33334C6.44566 3.33334 6.23369 3.42113 6.07741 3.57741C5.92113 3.73369 5.83334 3.94566 5.83334 4.16667Z"
+      d="M5 10C4.0111 10 3.0444 9.70676 2.22215 9.15735C1.39991 8.60794 0.759043 7.82705 0.380605 6.91342C0.00216643 5.99979 -0.0968503 4.99446 0.0960758 4.02455C0.289002 3.05465 0.765206 2.16373 1.46447 1.46447C2.16373 0.765206 3.05465 0.289002 4.02455 0.0960758C4.99446 -0.0968503 5.99979 0.00216643 6.91342 0.380605C7.82705 0.759043 8.60794 1.39991 9.15735 2.22215C9.70676 3.0444 10 4.0111 10 5C9.99857 6.32564 9.47132 7.59658 8.53395 8.53395C7.59658 9.47132 6.32564 9.99857 5 10V10Z"
       fill="#001A23"
       fillOpacity="0.5"
     />
@@ -792,9 +915,8 @@ const ClockIcon = () => (
   </Svg>
 );
 
-// ==========================================
-// STYLES
-// ==========================================
+// ── Estilos (base do CÓDIGO 2, completo) ──────────────────────────────────────
+
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
@@ -1097,6 +1219,25 @@ const styles = StyleSheet.create({
   checkboxTextActive: {
     color: "#EEE82C",
   },
+  // Preview de fotos da finalização
+  previewImageWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    overflow: "hidden",
+    position: "relative",
+  },
+  previewImage: {
+    width: "100%",
+    height: "100%",
+  },
+  previewRemoveBtn: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 10,
+  },
   uploadMainContainer: {
     borderRadius: 20,
     overflow: "hidden",
@@ -1118,6 +1259,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "500",
     color: "#E8F1F2",
+    textAlign: "center",
   },
   uploadIconCircle: {
     width: 50,

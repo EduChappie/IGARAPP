@@ -1,3 +1,6 @@
+// app/perfil_ong.tsx
+// Exibe fotoPerfil e fotoCapa vindas do Firestore (salvas pelo editarperfil_ong.tsx)
+
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -14,23 +17,36 @@ import {
   View,
 } from "react-native";
 import Svg, { Circle, G, Path, Rect } from "react-native-svg";
-// IMPORT DO CONTEXTO DE AUTENTICAÇÃO
 import { useAuth } from "@/src/contexts/AuthContext";
+
+// Imagens padrão usadas quando a ONG não tem foto cadastrada
+const FOTO_CAPA_PADRAO = require("../src/assets/image_card_1.png");
+const FOTO_PERFIL_PADRAO = require("../src/assets/image_card_1.png");
 
 export default function PerfilOngScreen() {
   const router = useRouter();
-  const { user } = useAuth();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
 
-  // Controle de visibilidade do Modal
   const [isLogoutModalVisible, setLogoutModalVisible] = useState(false);
 
-  // --- NAVEGAÇÃO DE TELAS (Push) ---
   const handleNav = (rota: string) => {
     setTimeout(() => {
       router.push(rota as any);
     }, 50);
   };
+
+  // ── Resolve fonte da foto de capa ────────────────────────────────────────────
+  // user?.fotoCapa vem do Firestore após o editarperfil_ong salvar a URL do Cloudinary.
+  // Se existir, usa { uri: "https://res.cloudinary.com/..." }
+  // Se não, usa a imagem local padrão.
+  const fotoCapa = (user as any)?.fotoCapa
+    ? { uri: (user as any).fotoCapa }
+    : FOTO_CAPA_PADRAO;
+
+  // ── Resolve fonte da foto de perfil (logo) ───────────────────────────────────
+  const fotoPerfil = (user as any)?.fotoPerfil
+    ? { uri: (user as any).fotoPerfil }
+    : FOTO_PERFIL_PADRAO;
 
   const acoesIncentivadas = [
     {
@@ -38,14 +54,14 @@ export default function PerfilOngScreen() {
       titulo: "Igarapé do Mindú",
       local: "Manaus, Amazonas",
       nota: "5.0",
-      imagem: require("../src/assets/image_card_1.png"),
+      imagem: FOTO_PERFIL_PADRAO,
     },
     {
       id: "2",
       titulo: "Praia da Ponta Negra",
       local: "Manaus, Amazonas",
       nota: "4.8",
-      imagem: require("../src/assets/image_card_1.png"),
+      imagem: FOTO_PERFIL_PADRAO,
     },
   ];
 
@@ -63,30 +79,60 @@ export default function PerfilOngScreen() {
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Perfil da ONG</Text>
           </View>
-          
-          {/* ÁREA DA CAPA E FOTO DE PERFIL */}
+
+          {/* ÁREA DA CAPA E LOGO */}
           <View style={styles.coverContainer}>
+            {/*
+              fotoCapa já é { uri: "..." } ou require(...).
+              ImageBackground aceita os dois formatos sem mudança.
+            */}
             <ImageBackground
-              source={require("../src/assets/image_card_1.png")}
+              source={fotoCapa}
               style={styles.coverImage}
               imageStyle={{ borderRadius: 20 }}
             >
-              {/* Botão de Compartilhar */}
-              <View style={{ position: 'absolute', top: 12, right: 12 }}>
+              {/* Botão Compartilhar */}
+              <View style={{ position: "absolute", top: 12, right: 12 }}>
                 <TopGlassButton
                   onPress={() => console.log("Compartilhar clicado!")}
                   icon={
                     <G>
-                      <Path d="M16 22L28 15M16 22L28 29" stroke="#001A23" strokeWidth="2.5" strokeLinecap="round" />
-                      <Circle cx="15" cy="22" r="3.5" fill="#EEE82C" stroke="#001A23" strokeWidth="2.5" />
-                      <Circle cx="29" cy="15" r="3.5" fill="#EEE82C" stroke="#001A23" strokeWidth="2.5" />
-                      <Circle cx="29" cy="29" r="3.5" fill="#EEE82C" stroke="#001A23" strokeWidth="2.5" />
+                      <Path
+                        d="M16 22L28 15M16 22L28 29"
+                        stroke="#001A23"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                      />
+                      <Circle
+                        cx="15"
+                        cy="22"
+                        r="3.5"
+                        fill="#EEE82C"
+                        stroke="#001A23"
+                        strokeWidth="2.5"
+                      />
+                      <Circle
+                        cx="29"
+                        cy="15"
+                        r="3.5"
+                        fill="#EEE82C"
+                        stroke="#001A23"
+                        strokeWidth="2.5"
+                      />
+                      <Circle
+                        cx="29"
+                        cy="29"
+                        r="3.5"
+                        fill="#EEE82C"
+                        stroke="#001A23"
+                        strokeWidth="2.5"
+                      />
                     </G>
                   }
                 />
               </View>
 
-              {/* Botão de Editar Perfil */}
+              {/* Botão Editar Perfil */}
               <TouchableOpacity
                 style={styles.editButtonOverlay}
                 activeOpacity={0.7}
@@ -102,12 +148,9 @@ export default function PerfilOngScreen() {
               </TouchableOpacity>
             </ImageBackground>
 
-            {/* Foto de perfil sobrepondo a capa */}
+            {/* Logo da ONG sobrepondo a capa */}
             <View style={styles.profileImageWrapper}>
-              <Image
-                source={require("../src/components/icons/Logos tela inicial.svg")}
-                style={styles.profileImage}
-              />
+              <Image source={fotoPerfil} style={styles.profileImage} />
             </View>
           </View>
 
@@ -116,34 +159,42 @@ export default function PerfilOngScreen() {
             <Text style={styles.accountType}>Conta ONG</Text>
             <Text style={styles.profileName}>{user?.razaoSocial}</Text>
 
-            {/* Endereço Adicionado */}
-            <View style={styles.locationRow}>
-              <Ionicons name="location-outline" size={16} color="#A6FF00" style={{ marginRight: 6 }} />
-              <Text style={styles.locationText}>
-                {user?.endereco.bairro}, {user?.endereco.rua}, {user?.endereco.numero} - {user?.endereco.cidade}, {user?.endereco.estado}
+            {user?.endereco && (
+              <View style={styles.locationRow}>
+                <Ionicons
+                  name="location-outline"
+                  size={16}
+                  color="#A6FF00"
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={styles.locationText}>
+                  {user.endereco.bairro}, {user.endereco.rua},{" "}
+                  {user.endereco.numero} - {user.endereco.cidade},{" "}
+                  {user.endereco.estado}
                 </Text>
-            </View>
+              </View>
+            )}
 
             <Text style={styles.bioText}>
-              {user?.bio}
+              {user?.bio || "Sem descrição ainda."}
             </Text>
 
-            {/* Link do Instagram */}
-            <TouchableOpacity style={styles.instagramLink} activeOpacity={0.7}>
-              <Ionicons
-                name="logo-instagram"
-                size={18}
-                color="#A6FF00"
-                style={{ marginRight: 8 }}
-              />
-              <Text style={styles.instagramText}>{user?.insta}</Text>
-            </TouchableOpacity>
+            {user?.insta ? (
+              <TouchableOpacity style={styles.instagramLink} activeOpacity={0.7}>
+                <Ionicons
+                  name="logo-instagram"
+                  size={18}
+                  color="#A6FF00"
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={styles.instagramText}>{user.insta}</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
 
           {/* CARROSSEL DE AÇÕES */}
           <View style={styles.actionsContainer}>
             <Text style={styles.sectionTitle}>Ações incentivadas</Text>
-
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -180,20 +231,24 @@ export default function PerfilOngScreen() {
             </ScrollView>
           </View>
 
-          {/* BOTAO DE LOGOUT (ABRE O MODAL) */}
-          <TouchableOpacity 
-            style={styles.logoutButton} 
-            activeOpacity={0.7} 
+          {/* BOTÃO LOGOUT */}
+          <TouchableOpacity
+            style={styles.logoutButton}
+            activeOpacity={0.7}
             onPress={() => setLogoutModalVisible(true)}
           >
-            <Ionicons name="log-out-outline" size={20} color="#FF3B30" style={{ marginRight: 8 }} />
+            <Ionicons
+              name="log-out-outline"
+              size={20}
+              color="#FF3B30"
+              style={{ marginRight: 8 }}
+            />
             <Text style={styles.logoutButtonText}>Sair da conta</Text>
           </TouchableOpacity>
-
         </ScrollView>
       </LinearGradient>
 
-      {/* MODAL PERSONALIZADO DE LOGOUT */}
+      {/* MODAL DE LOGOUT */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -206,10 +261,10 @@ export default function PerfilOngScreen() {
               <Ionicons name="log-out-outline" size={32} color="#FF3B30" />
             </View>
             <Text style={styles.modalTitle}>Sair da conta</Text>
-            <Text style={styles.modalText}>Tem certeza que deseja sair do IgarApp?</Text>
-            
+            <Text style={styles.modalText}>
+              Tem certeza que deseja sair do IgarApp?
+            </Text>
             <View style={styles.modalButtonsRow}>
-              {/* Botão Cancelar */}
               <TouchableOpacity
                 style={styles.modalCancelButton}
                 activeOpacity={0.7}
@@ -217,16 +272,14 @@ export default function PerfilOngScreen() {
               >
                 <Text style={styles.modalCancelText}>Cancelar</Text>
               </TouchableOpacity>
-
-              {/* Botão Sair - AGORA COM A FUNÇÃO DO FIREBASE */}
               <TouchableOpacity
                 style={styles.modalConfirmButton}
                 activeOpacity={0.7}
                 onPress={async () => {
                   try {
-                    setLogoutModalVisible(false); // Fecha o modal primeiro
-                    await signOut();              // Desloga no Firebase
-                    router.replace("/login_pl");  // Vai pra tela de login
+                    setLogoutModalVisible(false);
+                    await signOut();
+                    router.replace("/login_pl");
                   } catch (error) {
                     console.error("Falha ao deslogar:", error);
                   }
@@ -238,14 +291,11 @@ export default function PerfilOngScreen() {
           </View>
         </View>
       </Modal>
-
     </View>
   );
 }
 
-// ==========================================
-// COMPONENTE AUXILIAR
-// ==========================================
+// ── Componente auxiliar ────────────────────────────────────────────────────────
 
 const TopGlassButton = ({
   icon,
@@ -278,7 +328,15 @@ const TopGlassButton = ({
       />
       <G>
         <Rect x="2.5" y="2.5" width="39" height="39" rx="15" fill="#EEE82C" />
-        <Rect x="3" y="3" width="38" height="38" rx="14.5" stroke="#001A23" strokeOpacity="0.4" />
+        <Rect
+          x="3"
+          y="3"
+          width="38"
+          height="38"
+          rx="14.5"
+          stroke="#001A23"
+          strokeOpacity="0.4"
+        />
         {icon}
       </G>
     </Svg>
@@ -286,20 +344,21 @@ const TopGlassButton = ({
 );
 
 const styles = StyleSheet.create({
+  container: { flex: 1 },
   header: {
     paddingHorizontal: 24,
     marginTop: 65,
+    marginBottom: 10,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: "600",
     color: "#E8F1F2",
   },
-  container: { flex: 1 },
   coverContainer: {
     paddingHorizontal: 24,
-    marginTop: Platform.OS === "ios" ? 50 : 25,
-    marginBottom: 40,
+    marginTop: Platform.OS === "ios" ? 20 : 10,
+    marginBottom: 50,
     width: "100%",
     alignItems: "center",
   },
@@ -339,6 +398,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: "#012A36",
     backgroundColor: "#012A36",
+    overflow: "hidden",
   },
   profileImage: { width: "100%", height: "100%", borderRadius: 40 },
   infoContainer: { paddingHorizontal: 24, marginBottom: 30 },
@@ -361,6 +421,7 @@ const styles = StyleSheet.create({
   locationText: {
     color: "rgba(255,255,255,0.7)",
     fontSize: 14,
+    flex: 1,
   },
   bioText: {
     color: "rgba(255,255,255,0.7)",
@@ -422,11 +483,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-  
-  // ESTILOS DO MODAL
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 26, 35, 0.8)", 
+    backgroundColor: "rgba(0, 26, 35, 0.8)",
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 24,
@@ -462,11 +521,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     lineHeight: 20,
   },
-  modalButtonsRow: {
-    flexDirection: "row",
-    width: "100%",
-    gap: 12,
-  },
+  modalButtonsRow: { flexDirection: "row", width: "100%", gap: 12 },
   modalCancelButton: {
     flex: 1,
     height: 50,
@@ -475,11 +530,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  modalCancelText: {
-    color: "#E8F1F2",
-    fontSize: 16,
-    fontWeight: "600",
-  },
+  modalCancelText: { color: "#E8F1F2", fontSize: 16, fontWeight: "600" },
   modalConfirmButton: {
     flex: 1,
     height: 50,
@@ -490,9 +541,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  modalConfirmText: {
-    color: "#FF3B30",
-    fontSize: 16,
-    fontWeight: "600",
-  },
+  modalConfirmText: { color: "#FF3B30", fontSize: 16, fontWeight: "600" },
 });

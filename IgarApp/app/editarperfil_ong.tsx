@@ -1,9 +1,13 @@
+// app/editarperfil_ong.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,27 +16,72 @@ import {
   View,
 } from "react-native";
 import Svg, { G, Path, Rect } from "react-native-svg";
-import { userService, showSuccessAlert, showErrorAlert } from "@/src/services/firebase/firestoreService";
+import {
+  userService,
+  showSuccessAlert,
+  showErrorAlert,
+} from "@/src/services/firebase/firestoreService";
 import { useAuth } from "@/src/contexts/AuthContext";
+import { uploadImagem } from "@/src/services/cloudnaryService";
 
 export default function EditarPerfilOngScreen() {
   const router = useRouter();
   const { user } = useAuth();
 
-  // Estados dos inputs específicos para ONG
   const [razaoSocial, setRazaoSocial] = useState(user?.razaoSocial ?? "");
   const [descricaoOng, setDescricaoOng] = useState(user?.bio ?? "");
   const [endereco, setEndereco] = useState(
     user?.endereco
       ? `${user.endereco.rua} - ${user.endereco.numero}, ${user.endereco.cidade}, ${user.endereco.estado}`
-      : ""
+      : "",
   );
   const [instagram, setInstagram] = useState(user?.insta ?? "");
   const [loading, setLoading] = useState(false);
-
-  // Controle de foco
   const [focused, setFocused] = useState("");
 
+  // URIs locais para preview
+  const [fotoLogoUri, setFotoLogoUri] = useState<string | null>(null);
+  const [fotoCapaUri, setFotoCapaUri] = useState<string | null>(null);
+  const [uploadandoLogo, setUploadandoLogo] = useState(false);
+  const [uploadandoCapa, setUploadandoCapa] = useState(false);
+
+  // ── Selecionar logo ──────────────────────────────────────────────────────
+  const selecionarLogo = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permissão negada", "Precisamos acessar sua galeria.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setFotoLogoUri(result.assets[0].uri);
+    }
+  };
+
+  // ── Selecionar capa ──────────────────────────────────────────────────────
+  const selecionarCapa = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permissão negada", "Precisamos acessar sua galeria.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setFotoCapaUri(result.assets[0].uri);
+    }
+  };
+
+  // ── Salvar ───────────────────────────────────────────────────────────────
   async function saveEdit() {
     if (!user?.uid) {
       showErrorAlert("Usuário não identificado. Faça login novamente.");
@@ -42,18 +91,40 @@ export default function EditarPerfilOngScreen() {
     try {
       setLoading(true);
 
+      let logoUrl: string | undefined;
+      let capaUrl: string | undefined;
+
+      if (fotoLogoUri) {
+        setUploadandoLogo(true);
+        const res = await uploadImagem(fotoLogoUri, "perfil");
+        logoUrl = res.secure_url;
+        setUploadandoLogo(false);
+      }
+
+      if (fotoCapaUri) {
+        setUploadandoCapa(true);
+        const res = await uploadImagem(fotoCapaUri, "perfil");
+        capaUrl = res.secure_url;
+        setUploadandoCapa(false);
+      }
+
       await userService.salvarPerfil(user.uid, {
         razaoSocial: razaoSocial.trim(),
         bio: descricaoOng.trim(),
         insta: instagram.trim(),
+        ...(logoUrl && { fotoPerfil: logoUrl }),
+        ...(capaUrl && { fotoCapa: capaUrl }),
       });
 
       showSuccessAlert("Perfil atualizado com sucesso!");
       router.back();
     } catch (error) {
+      console.error(error);
       showErrorAlert("Não foi possível salvar as alterações. Tente novamente.");
     } finally {
       setLoading(false);
+      setUploadandoLogo(false);
+      setUploadandoCapa(false);
     }
   }
 
@@ -63,7 +134,6 @@ export default function EditarPerfilOngScreen() {
       locations={[0, 0.3, 1]}
       style={styles.container}
     >
-      {/* HEADER */}
       <View style={styles.header}>
         <TopGlassButton
           onPress={() => router.back()}
@@ -86,30 +156,70 @@ export default function EditarPerfilOngScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* BOTÕES DE ALTERAR IMAGEM */}
+        {/* BOTÕES DE IMAGEM */}
         <View style={styles.imageButtonsContainer}>
-          <TouchableOpacity style={styles.imageButton}>
-            <Ionicons
-              name="image-outline"
-              size={20}
-              color="#A6FF00"
-              style={{ marginBottom: 8 }}
-            />
-            <Text style={styles.imageButtonText}>Alterar Capa</Text>
+          {/* CAPA */}
+          <TouchableOpacity
+            style={styles.imageButton}
+            onPress={selecionarCapa}
+            activeOpacity={0.8}
+          >
+            {fotoCapaUri ? (
+              <Image
+                source={{ uri: fotoCapaUri }}
+                style={StyleSheet.absoluteFillObject}
+                borderRadius={16}
+              />
+            ) : null}
+            {uploadandoCapa ? (
+              <ActivityIndicator color="#A6FF00" />
+            ) : (
+              <>
+                <Ionicons
+                  name="image-outline"
+                  size={20}
+                  color="#A6FF00"
+                  style={{ marginBottom: 8 }}
+                />
+                <Text style={styles.imageButtonText}>
+                  {fotoCapaUri ? "Capa selecionada ✓" : "Alterar Capa"}
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.imageButton}>
-            <Ionicons
-              name="camera-outline"
-              size={20}
-              color="#A6FF00"
-              style={{ marginBottom: 8 }}
-            />
-            <Text style={styles.imageButtonText}>Alterar Logo</Text>
+          {/* LOGO */}
+          <TouchableOpacity
+            style={styles.imageButton}
+            onPress={selecionarLogo}
+            activeOpacity={0.8}
+          >
+            {fotoLogoUri ? (
+              <Image
+                source={{ uri: fotoLogoUri }}
+                style={StyleSheet.absoluteFillObject}
+                borderRadius={16}
+              />
+            ) : null}
+            {uploadandoLogo ? (
+              <ActivityIndicator color="#A6FF00" />
+            ) : (
+              <>
+                <Ionicons
+                  name="camera-outline"
+                  size={20}
+                  color="#A6FF00"
+                  style={{ marginBottom: 8 }}
+                />
+                <Text style={styles.imageButtonText}>
+                  {fotoLogoUri ? "Logo selecionado ✓" : "Alterar Logo"}
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
 
-        {/* FORMULÁRIO ONG */}
+        {/* FORMULÁRIO */}
         <View style={styles.formContainer}>
           <Text style={styles.label}>Razão Social</Text>
           <TextInput
@@ -151,7 +261,7 @@ export default function EditarPerfilOngScreen() {
 
           <Text style={styles.label}>Descrição da ONG</Text>
           <TextInput
-            placeholder="Fale um pouco sobre a missão e visão..."
+            placeholder="Missão e visão..."
             placeholderTextColor="rgba(255,255,255,0.35)"
             multiline
             numberOfLines={4}
@@ -194,7 +304,6 @@ export default function EditarPerfilOngScreen() {
         </View>
       </ScrollView>
 
-      {/* BOTÃO SALVAR (Fixo no rodapé) */}
       <View style={styles.footer}>
         <TouchableOpacity
           style={[styles.saveButton, loading && { opacity: 0.7 }]}
@@ -215,9 +324,6 @@ export default function EditarPerfilOngScreen() {
   );
 }
 
-// ==========================================
-// COMPONENTE DO BOTÃO PADRÃO (VIDRO + AMARELO)
-// ==========================================
 const TopGlassButton = ({
   icon,
   onPress,
@@ -273,7 +379,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 60,
     paddingBottom: 20,
-    backgroundColor: "transparent",
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255,255,255,0.05)",
   },
@@ -294,6 +399,7 @@ const styles = StyleSheet.create({
     borderStyle: "dashed",
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
   },
   imageButtonText: { color: "rgba(255,255,255,0.7)", fontSize: 12 },
   formContainer: { flex: 1 },

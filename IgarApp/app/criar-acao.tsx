@@ -1,11 +1,13 @@
+// app/criar-acao.tsx
 import { LinearGradient } from "expo-linear-gradient";
+import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import * as ImagePicker from "expo-document-picker";
-
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
+  Image,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -17,8 +19,13 @@ import {
 } from "react-native";
 import Svg, { G, Path, Rect } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
-import { acaoService, showSuccessAlert, showErrorAlert } from "@/src/services/firebase/firestoreService";
+import {
+  acaoService,
+  showSuccessAlert,
+  showErrorAlert,
+} from "@/src/services/firebase/firestoreService";
 import { useAuth } from "@/src/contexts/AuthContext";
+import { uploadMultiplasImagens } from "@/src/services/cloudnaryService";
 
 const { width } = Dimensions.get("window");
 
@@ -37,13 +44,10 @@ const NOME_MESES = [
   "Dezembro",
 ];
 
-// TODO: substitua pelo ID real do organizador logado (ex: vindo do contexto de auth)
-
 export default function CriarAcaoScreen() {
   const router = useRouter();
   const { user } = useAuth();
 
-  // Estados dos inputs
   const [titulo, setTitulo] = useState("");
   const [cidade, setCidade] = useState("");
   const [estado, setEstado] = useState("");
@@ -53,7 +57,10 @@ export default function CriarAcaoScreen() {
   const [descricao, setDescricao] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // --- LÓGICA DAS METAS E ORIENTAÇÕES ---
+  // Imagens selecionadas (URIs locais)
+  const [imagensUri, setImagensUri] = useState<string[]>([]);
+  const [uploadandoImagens, setUploadandoImagens] = useState(false);
+
   const [metas, setMetas] = useState<string[]>([]);
   const [metaInput, setMetaInput] = useState("");
 
@@ -70,12 +77,10 @@ export default function CriarAcaoScreen() {
     setMetas(novasMetas);
   };
 
-  // --- LÓGICA DINÂMICA DO CALENDÁRIO ---
   const dataDeHoje = new Date();
   const [currentDate, setCurrentDate] = useState(new Date());
   const anoVisualizado = currentDate.getFullYear();
   const mesVisualizado = currentDate.getMonth();
-
   const [selectedDay, setSelectedDay] = useState(dataDeHoje.getDate());
 
   const diasNoMes = new Date(anoVisualizado, mesVisualizado + 1, 0).getDate();
@@ -84,16 +89,56 @@ export default function CriarAcaoScreen() {
   const offset = primeiroDiaDoMes === 0 ? 6 : primeiroDiaDoMes - 1;
   const espacosVazios = Array.from({ length: offset }, (_, i) => i);
 
-  // --- FUNÇÃO DE SALVAR ---
+  // ── Selecionar imagens ────────────────────────────────────────────────────
+  const selecionarImagens = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permissão negada", "Precisamos acessar sua galeria.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 0.8,
+      selectionLimit: 5,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      const uris = result.assets.map((a) => a.uri);
+      setImagensUri((prev) => [...prev, ...uris].slice(0, 5));
+    }
+  };
+
+  const removerImagem = (index: number) => {
+    setImagensUri((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // ── Criar ação ─────────────────────────────────────────────────────────────
   const handleCriarAcao = async () => {
-    if (!titulo.trim() || !cidade.trim() || !estado.trim() || !horaInicio.trim() || !horaFim.trim()) {
-      showErrorAlert("Preencha todos os campos obrigatórios: título, cidade, estado e horário.");
+    if (
+      !titulo.trim() ||
+      !cidade.trim() ||
+      !estado.trim() ||
+      !horaInicio.trim() ||
+      !horaFim.trim()
+    ) {
+      showErrorAlert("Preencha todos os campos obrigatórios.");
       return;
     }
 
     try {
       setLoading(true);
 
+      // 1. Faz upload das imagens pro Cloudinary
+      let urlsImagens: string[] = [];
+      if (imagensUri.length > 0) {
+        setUploadandoImagens(true);
+        urlsImagens = await uploadMultiplasImagens(imagensUri, "acao");
+        setUploadandoImagens(false);
+      }
+
+      // 2. Salva a ação no Firestore com as URLs
       const data = new Date(anoVisualizado, mesVisualizado, selectedDay);
 
       await acaoService.criarAcao({
@@ -107,7 +152,7 @@ export default function CriarAcaoScreen() {
         voluntariosNecessarios: parseInt(voluntarios) || 0,
         voluntariosInscritos: 0,
         ongId: user?.uid || "ID_ORGANIZADOR",
-        imagens: [],
+        imagens: urlsImagens,
         metas,
         orientacoes: "",
       });
@@ -115,9 +160,11 @@ export default function CriarAcaoScreen() {
       showSuccessAlert("Ação criada com sucesso!");
       router.back();
     } catch (error) {
+      console.error(error);
       showErrorAlert("Não foi possível criar a ação. Tente novamente.");
     } finally {
       setLoading(false);
+      setUploadandoImagens(false);
     }
   };
 
@@ -129,7 +176,6 @@ export default function CriarAcaoScreen() {
         translucent
       />
 
-      {/* FUNDO COM GRADIENTE LINEAR */}
       <LinearGradient
         colors={["#044A60", "#012A36", "#012A36"]}
         locations={[0, 0.4, 1]}
@@ -141,18 +187,16 @@ export default function CriarAcaoScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         <SafeAreaView>
-          {/* HEADER */}
           <View style={styles.header}>
             <TopGlassButton onPress={() => router.back()} />
             <Text style={styles.headerTitle}>Criar Ação</Text>
           </View>
 
           <Text style={styles.descriptionHeader}>
-            Preencha os dados abaixo para criar uma nova ação voluntária e
-            engajar a comunidade.
+            Preencha os dados abaixo para criar uma nova ação voluntária.
           </Text>
 
-          {/* INFORMAÇÕES BÁSICAS */}
+          {/* TÍTULO */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Título da ação</Text>
             <View style={styles.inputContainer}>
@@ -166,6 +210,7 @@ export default function CriarAcaoScreen() {
             </View>
           </View>
 
+          {/* CIDADE / ESTADO */}
           <View style={styles.rowInputs}>
             <View style={[styles.inputGroup, { flex: 1 }]}>
               <Text style={styles.label}>Cidade</Text>
@@ -173,7 +218,7 @@ export default function CriarAcaoScreen() {
                 <TextInput
                   value={cidade}
                   onChangeText={setCidade}
-                  placeholder="Selecionar Cidade"
+                  placeholder="Cidade"
                   placeholderTextColor="#FFFFFFB2"
                   style={styles.textInput}
                 />
@@ -185,7 +230,7 @@ export default function CriarAcaoScreen() {
                 <TextInput
                   value={estado}
                   onChangeText={setEstado}
-                  placeholder="Selecionar Estado"
+                  placeholder="Estado"
                   placeholderTextColor="#FFFFFFB2"
                   style={styles.textInput}
                 />
@@ -193,6 +238,7 @@ export default function CriarAcaoScreen() {
             </View>
           </View>
 
+          {/* HORÁRIO */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Horário do evento</Text>
             <View style={styles.timeRow}>
@@ -218,19 +264,16 @@ export default function CriarAcaoScreen() {
             </View>
           </View>
 
-          {/* CARD DE DATA */}
+          {/* CARD DATA */}
           <View style={styles.dateDisplayCard}>
             <LinearGradient
               colors={["#0083B1", "#05506B"]}
               style={styles.dateDisplayGradient}
             >
               <View style={styles.dateDisplayContent}>
-                <View style={styles.dateIconTextRow}>
-                  <CalendarIconWhite />
-                  <Text style={styles.dateDisplayText}>
-                    Escolha a data do evento
-                  </Text>
-                </View>
+                <Text style={styles.dateDisplayText}>
+                  Escolha a data do evento
+                </Text>
                 <Text style={styles.dateBigNumber}>
                   {selectedDay < 10 ? `0${selectedDay}` : selectedDay}
                   <Text style={{ color: "#EEE82C" }}>
@@ -244,7 +287,7 @@ export default function CriarAcaoScreen() {
             </LinearGradient>
           </View>
 
-          {/* CALENDÁRIO DINÂMICO CONSERTADO */}
+          {/* CALENDÁRIO */}
           <View style={styles.calendarContainer}>
             <View style={styles.calendarHeader}>
               <TouchableOpacity
@@ -280,7 +323,7 @@ export default function CriarAcaoScreen() {
             </View>
             <View style={styles.daysGrid}>
               {espacosVazios.map((_, i) => (
-                <View key={`empty-${i}`} style={styles.dayCellContainer} />
+                <View key={`e-${i}`} style={styles.dayCellContainer} />
               ))}
               {arrayDias.map((dia) => {
                 const isSelected = selectedDay === dia;
@@ -308,7 +351,7 @@ export default function CriarAcaoScreen() {
             </View>
           </View>
 
-          {/* DESCRIÇÃO DO EVENTO */}
+          {/* DESCRIÇÃO */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Descrição do evento</Text>
             <View
@@ -322,20 +365,20 @@ export default function CriarAcaoScreen() {
                 onChangeText={setDescricao}
                 style={[styles.textInput, { textAlignVertical: "top" }]}
                 multiline
-                placeholder="Detalhes completos sobre a ação..."
+                placeholder="Detalhes..."
                 placeholderTextColor="#FFFFFFB2"
               />
             </View>
           </View>
 
-          {/* ESTIMATIVA DE VOLUNTÁRIOS */}
+          {/* VOLUNTÁRIOS */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Estimativa de voluntários</Text>
             <View style={styles.inputContainer}>
               <TextInput
                 value={voluntarios}
                 onChangeText={setVoluntarios}
-                placeholder="Qtd. de voluntários"
+                placeholder="Qtd."
                 placeholderTextColor="#FFFFFFB2"
                 style={styles.textInput}
                 keyboardType="numeric"
@@ -343,14 +386,13 @@ export default function CriarAcaoScreen() {
             </View>
           </View>
 
-          {/* METAS E ORIENTAÇÕES */}
+          {/* METAS */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Metas e Orientações</Text>
-
             <View style={styles.metaInputRow}>
               <View style={[styles.inputContainer, { flex: 1 }]}>
                 <TextInput
-                  placeholder="Ex: Levar saco de lixo grande..."
+                  placeholder="Ex: Levar saco de lixo..."
                   placeholderTextColor="#FFFFFFB2"
                   value={metaInput}
                   onChangeText={setMetaInput}
@@ -365,7 +407,6 @@ export default function CriarAcaoScreen() {
                 <PlusIcon />
               </TouchableOpacity>
             </View>
-
             {metas.length > 0 && (
               <View style={styles.metasList}>
                 {metas.map((meta, index) => (
@@ -387,11 +428,35 @@ export default function CriarAcaoScreen() {
             )}
           </View>
 
-          {/* GALERIA DE UPLOAD */}
+          {/* GALERIA DE IMAGENS — com preview */}
           <Text style={styles.label}>Galeria de imagens do evento</Text>
+
+          {/* Preview das imagens selecionadas */}
+          {imagensUri.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginBottom: 12 }}
+              contentContainerStyle={{ gap: 10, paddingHorizontal: 2 }}
+            >
+              {imagensUri.map((uri, index) => (
+                <View key={index} style={styles.previewImageWrapper}>
+                  <Image source={{ uri }} style={styles.previewImage} />
+                  <TouchableOpacity
+                    style={styles.previewRemoveBtn}
+                    onPress={() => removerImagem(index)}
+                  >
+                    <Ionicons name="close-circle" size={20} color="#FFF" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
           <TouchableOpacity
             style={styles.uploadMainContainer}
             activeOpacity={0.8}
+            onPress={selecionarImagens}
           >
             <View style={styles.uploadDashedArea}>
               <LinearGradient
@@ -399,21 +464,31 @@ export default function CriarAcaoScreen() {
                 style={StyleSheet.absoluteFillObject}
               />
               <View style={styles.uploadContent}>
-                <Text style={styles.uploadTitle}>
-                  Faça o upload das imagens
-                </Text>
-                <View style={styles.uploadIconCircle}>
-                  <UploadIconSVG />
-                </View>
-                <Text style={styles.uploadSub}>
-                  Para melhores resultados, as dimensões devem ser 1080 x 1920
-                  pixels no formato .PNG
-                </Text>
+                {uploadandoImagens ? (
+                  <>
+                    <ActivityIndicator color="#EEE82C" size="large" />
+                    <Text style={styles.uploadTitle}>Enviando imagens...</Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.uploadTitle}>
+                      {imagensUri.length > 0
+                        ? `${imagensUri.length} imagem(ns) selecionada(s) — toque para adicionar mais`
+                        : "Toque para selecionar imagens"}
+                    </Text>
+                    <View style={styles.uploadIconCircle}>
+                      <UploadIconSVG />
+                    </View>
+                    <Text style={styles.uploadSub}>
+                      Máximo 5 imagens · PNG ou JPEG
+                    </Text>
+                  </>
+                )}
               </View>
             </View>
           </TouchableOpacity>
 
-          {/* BOTÃO CRIAR AÇÃO */}
+          {/* BOTÃO CRIAR */}
           <TouchableOpacity
             style={[styles.saveButton, loading && { opacity: 0.7 }]}
             onPress={handleCriarAcao}
@@ -431,9 +506,7 @@ export default function CriarAcaoScreen() {
   );
 }
 
-// ==========================================
-// COMPONENTES AUXILIARES E ÍCONES SVG
-// ==========================================
+// ── Ícones e botões ────────────────────────────────────────────────────────────
 
 const TopGlassButton = ({ onPress }: { onPress: () => void }) => (
   <TouchableOpacity
@@ -480,17 +553,6 @@ const TopGlassButton = ({ onPress }: { onPress: () => void }) => (
       </G>
     </Svg>
   </TouchableOpacity>
-);
-
-const CalendarIconWhite = () => (
-  <Svg width="14" height="14" viewBox="0 0 12 12" fill="none">
-    <Path
-      d="M3.375 1.5V2.625M8.625 1.5V2.625M1.5 9.375V3.75C1.5 3.12868 2.00368 2.625 2.625 2.625H9.375C9.99632 2.625 10.5 3.12868 10.5 3.75V9.375M1.5 9.375C1.5 9.99632 2.00368 10.5 2.625 10.5H9.375C9.99632 10.5 10.5 9.99632 10.5 9.375M1.5 9.375V5.625C1.5 5.00368 2.00368 4.5 2.625 4.5H9.375C9.99632 4.5 10.5 5.00368 10.5 5.625V9.375"
-      stroke="white"
-      strokeWidth="1"
-      strokeLinecap="round"
-    />
-  </Svg>
 );
 
 const SetaBack = () => (
@@ -541,15 +603,9 @@ const UploadIconSVG = () => (
   </Svg>
 );
 
-// ==========================================
-// ESTILOS
-// ==========================================
-
 const styles = StyleSheet.create({
   mainContainer: { flex: 1, backgroundColor: "#001A23" },
   scrollContent: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 60 },
-
-  // Header
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -572,7 +628,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 35,
   },
-
   inputGroup: { marginBottom: 15 },
   label: {
     color: "#FFFFFFB2",
@@ -599,7 +654,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#D9D9D966",
     marginHorizontal: 10,
   },
-
   dateDisplayCard: {
     height: 80,
     borderRadius: 20,
@@ -618,10 +672,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  dateIconTextRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   dateDisplayText: { color: "#E8F1F2", fontSize: 14, fontWeight: "300" },
   dateBigNumber: { color: "#E8F1F2", fontSize: 25, fontWeight: "400" },
-
   calendarContainer: { marginBottom: 30 },
   calendarHeader: {
     flexDirection: "row",
@@ -659,8 +711,6 @@ const styles = StyleSheet.create({
   },
   dayText: { color: "#E8F1F2", fontSize: 16, fontWeight: "300" },
   daySelected: { backgroundColor: "#EEE82C" },
-
-  // ESTILOS DAS METAS E ORIENTAÇÕES
   metaInputRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   addMetaBtn: {
     width: 47,
@@ -691,9 +741,24 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   metaRemoveBtn: { padding: 2 },
-
+  // Preview de imagens
+  previewImageWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    overflow: "hidden",
+    position: "relative",
+  },
+  previewImage: { width: "100%", height: "100%" },
+  previewRemoveBtn: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 10,
+  },
   uploadMainContainer: {
-    height: 186,
+    height: 140,
     borderRadius: 15,
     backgroundColor: "#002C3B",
     padding: 5,
@@ -717,16 +782,17 @@ const styles = StyleSheet.create({
     color: "#E8F1F2",
     fontSize: 12,
     fontWeight: "300",
-    marginBottom: 15,
+    marginBottom: 10,
+    textAlign: "center",
   },
   uploadIconCircle: {
-    width: 65,
-    height: 65,
-    borderRadius: 35,
+    width: 45,
+    height: 45,
+    borderRadius: 25,
     backgroundColor: "#05506B",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 15,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: "#FFFFFF33",
   },
@@ -736,8 +802,6 @@ const styles = StyleSheet.create({
     fontWeight: "300",
     textAlign: "center",
   },
-
-  // BOTÃO SALVAR / CRIAR AÇÃO
   saveButton: {
     backgroundColor: "#EEE82C",
     height: 55,

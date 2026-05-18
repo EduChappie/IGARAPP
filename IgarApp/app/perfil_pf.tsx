@@ -1,9 +1,11 @@
+// app/perfil_pf.tsx
+// Exibe fotoPerfil e fotoCapa vindas do Firestore (salvas pelo editperfil_pf.tsx)
+
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
-  ActivityIndicator,
   Image,
   ImageBackground,
   Modal,
@@ -15,25 +17,17 @@ import {
   View,
 } from "react-native";
 import Svg, { Circle, G, Path, Rect } from "react-native-svg";
-
 import { useAuth } from "@/src/contexts/AuthContext";
-import { getHistoricoUsuario } from "@/src/services/firebase/firestoreService";
 
-type AcaoParticipada = {
-  id: string;
-  titulo: string;
-  local: string;
-  nota: string;
-  imagem: any;
-};
+// Imagem padrão usada quando o usuário não tem foto
+const FOTO_PERFIL_PADRAO = require("../src/assets/image_card_1.png");
+const FOTO_CAPA_PADRAO = require("../src/assets/image_card_1.png");
 
-export default function PerfilScreen() {
+export default function PerfilPfScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
 
   const [isLogoutModalVisible, setLogoutModalVisible] = useState(false);
-  const [acoesParticipadas, setAcoesParticipadas] = useState<AcaoParticipada[]>([]);
-  const [loadingAcoes, setLoadingAcoes] = useState(true);
 
   const handleNav = (rota: string) => {
     setTimeout(() => {
@@ -41,54 +35,34 @@ export default function PerfilScreen() {
     }, 50);
   };
 
-  useEffect(() => {
-    const carregarAcoesParticipadas = async () => {
-      if (!user?.uid) {
-        setLoadingAcoes(false);
-        return;
-      }
+  // ── Resolve a fonte da foto de perfil ───────────────────────────────────────
+  // Se o usuário tiver fotoPerfil (URL do Cloudinary), usa ela.
+  // Senão, usa a imagem padrão local.
+  const fotoPerfil = (user as any)?.fotoPerfil
+    ? { uri: (user as any).fotoPerfil }
+    : FOTO_PERFIL_PADRAO;
 
-      try {
-        setLoadingAcoes(true);
+  // ── Resolve a fonte da foto de capa ─────────────────────────────────────────
+  const fotoCapa = (user as any)?.fotoCapa
+    ? { uri: (user as any).fotoCapa }
+    : FOTO_CAPA_PADRAO;
 
-        const historico = await getHistoricoUsuario(user.uid);
-
-        const acoesFormatadas = historico
-          .filter((item: any) => item.acao)
-          .map((item: any) => {
-            const acao = item.acao;
-
-            return {
-              id: acao.id,
-              titulo: acao.titulo || "Ação sem título",
-              local:
-                acao.cidade && acao.estado
-                  ? `${acao.cidade}, ${acao.estado}`
-                  : "Local não informado",
-              nota: "5.0",
-              imagem:
-                acao.imagens && acao.imagens.length > 0
-                  ? { uri: acao.imagens[0] }
-                  : require("../src/assets/image_card_1.png"),
-            };
-          });
-
-        setAcoesParticipadas(acoesFormatadas);
-      } catch (error) {
-        console.error("Erro ao carregar ações participadas:", error);
-      } finally {
-        setLoadingAcoes(false);
-      }
-    };
-
-    carregarAcoesParticipadas();
-  }, [user?.uid]);
-
-  const nomeUsuario = user?.nome || user?.displayName || "Usuário";
-  const emailUsuario = user?.email || "E-mail não informado";
-  const telefoneUsuario = user?.telefone || "Telefone não informado";
-  const dataNascimentoUsuario =
-    user?.dataNascimento || "Data de nascimento não informada";
+  const acoesRecentes = [
+    {
+      id: "1",
+      titulo: "Igarapé do Mindú",
+      local: "Manaus, Amazonas",
+      nota: "5.0",
+      imagem: FOTO_PERFIL_PADRAO,
+    },
+    {
+      id: "2",
+      titulo: "Praia da Ponta Negra",
+      local: "Manaus, Amazonas",
+      nota: "4.8",
+      imagem: FOTO_PERFIL_PADRAO,
+    },
+  ];
 
   return (
     <View style={{ flex: 1 }}>
@@ -102,59 +76,25 @@ export default function PerfilScreen() {
           contentContainerStyle={{ paddingBottom: 150 }}
         >
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Perfil do Usuário</Text>
+            <Text style={styles.headerTitle}>Meu Perfil</Text>
           </View>
 
+          {/* ÁREA DA CAPA E FOTO DE PERFIL */}
           <View style={styles.coverContainer}>
+            {/* 
+              ImageBackground aceita tanto { uri: "https://..." } quanto require(...).
+              A variável `fotoCapa` já resolve isso automaticamente.
+            */}
             <ImageBackground
-              source={require("../src/assets/image_card_1.png")}
+              source={fotoCapa}
               style={styles.coverImage}
               imageStyle={{ borderRadius: 20 }}
             >
-              <View style={{ position: "absolute", top: 12, right: 12 }}>
-                <TopGlassButton
-                  onPress={() => console.log("Compartilhar clicado!")}
-                  icon={
-                    <G>
-                      <Path
-                        d="M16 22L28 15M16 22L28 29"
-                        stroke="#001A23"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                      />
-                      <Circle
-                        cx="15"
-                        cy="22"
-                        r="3.5"
-                        fill="#EEE82C"
-                        stroke="#001A23"
-                        strokeWidth="2.5"
-                      />
-                      <Circle
-                        cx="29"
-                        cy="15"
-                        r="3.5"
-                        fill="#EEE82C"
-                        stroke="#001A23"
-                        strokeWidth="2.5"
-                      />
-                      <Circle
-                        cx="29"
-                        cy="29"
-                        r="3.5"
-                        fill="#EEE82C"
-                        stroke="#001A23"
-                        strokeWidth="2.5"
-                      />
-                    </G>
-                  }
-                />
-              </View>
-
+              {/* Botão Editar Perfil */}
               <TouchableOpacity
                 style={styles.editButtonOverlay}
                 activeOpacity={0.7}
-                onPress={() => handleNav("../editperfil_pf")}
+                onPress={() => handleNav("/editperfil_pf")}
               >
                 <Ionicons
                   name="pencil"
@@ -166,105 +106,76 @@ export default function PerfilScreen() {
               </TouchableOpacity>
             </ImageBackground>
 
+            {/* Foto de perfil circular sobrepondo a capa */}
             <View style={styles.profileImageWrapper}>
-              <Image
-                source={require("../src/components/icons/Logos tela inicial.svg")}
-                style={styles.profileImage}
-              />
+              <Image source={fotoPerfil} style={styles.profileImage} />
             </View>
           </View>
 
+          {/* INFORMAÇÕES DO PERFIL */}
           <View style={styles.infoContainer}>
-            <View style={styles.tagContainer}>
-              <Ionicons name="ribbon" size={14} color="#012A36" />
-              <Text style={styles.tagText}>IgarApp Expert</Text>
-            </View>
-
-            <Text style={styles.accountType}>
-              {user?.tipo || "Conta Voluntário"}
+            <Text style={styles.accountType}>Conta Voluntário</Text>
+            <Text style={styles.profileName}>
+              {(user as any)?.nome || user?.displayName || "Usuário"}
             </Text>
-
-            <Text style={styles.profileName}>{nomeUsuario}</Text>
-
-            <Text style={styles.profileInfo}>{emailUsuario}</Text>
-            <Text style={styles.profileInfo}>{telefoneUsuario}</Text>
-            <Text style={styles.profileInfo}>{dataNascimentoUsuario}</Text>
 
             <Text style={styles.bioText}>
-              {user?.bio ||
-                "Sem bio..."}
+              {(user as any)?.bio || "Sem biografia ainda."}
             </Text>
 
-            <TouchableOpacity style={styles.instagramLink} activeOpacity={0.7}>
-              <Ionicons
-                name="logo-instagram"
-                size={18}
-                color="#A6FF00"
-                style={{ marginRight: 8 }}
-              />
-              <Text style={styles.instagramText}>
-                {user?.insta || "@redes..."}
-              </Text>
-            </TouchableOpacity>
+            {(user as any)?.insta ? (
+              <TouchableOpacity style={styles.instagramLink} activeOpacity={0.7}>
+                <Ionicons
+                  name="logo-instagram"
+                  size={18}
+                  color="#A6FF00"
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={styles.instagramText}>{(user as any).insta}</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
 
+          {/* AÇÕES RECENTES */}
           <View style={styles.actionsContainer}>
-            <Text style={styles.sectionTitle}>Ações que participou</Text>
-
-            {loadingAcoes ? (
-              <ActivityIndicator
-                size="small"
-                color="#A6FF00"
-                style={{ marginTop: 10 }}
-              />
-            ) : acoesParticipadas.length === 0 ? (
-              <Text style={styles.emptyActionsText}>
-                Você ainda não participou de nenhuma ação.
-              </Text>
-            ) : (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingLeft: 24, paddingRight: 8 }}
-              >
-                {acoesParticipadas.map((acao) => (
-                  <TouchableOpacity
-                    key={acao.id}
-                    style={styles.actionCard}
-                    activeOpacity={0.8}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/detalhes-evento",
-                        params: { id: acao.id },
-                      } as any)
-                    }
+            <Text style={styles.sectionTitle}>Ações participadas</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingLeft: 24, paddingRight: 8 }}
+            >
+              {acoesRecentes.map((acao) => (
+                <TouchableOpacity
+                  key={acao.id}
+                  style={styles.actionCard}
+                  activeOpacity={0.8}
+                >
+                  <ImageBackground
+                    source={acao.imagem}
+                    style={styles.actionImage}
+                    imageStyle={{ borderRadius: 16 }}
                   >
-                    <ImageBackground
-                      source={acao.imagem}
-                      style={styles.actionImage}
-                      imageStyle={{ borderRadius: 16 }}
+                    <LinearGradient
+                      colors={["transparent", "rgba(1, 42, 54, 0.9)"]}
+                      locations={[0.4, 1]}
+                      style={styles.actionGradient}
                     >
-                      <LinearGradient
-                        colors={["transparent", "rgba(1, 42, 54, 0.9)"]}
-                        locations={[0.4, 1]}
-                        style={styles.actionGradient}
-                      >
-                        <Text style={styles.actionTitle}>{acao.titulo}</Text>
-                        <View style={styles.actionLocationRow}>
-                          <Text style={styles.actionLocation}>{acao.local}</Text>
-                          <View style={styles.ratingContainer}>
-                            <Ionicons name="star" size={12} color="#A6FF00" />
-                            <Text style={styles.ratingText}>{acao.nota}</Text>
-                          </View>
+                      <Text style={styles.actionTitle}>{acao.titulo}</Text>
+                      <View style={styles.actionLocationRow}>
+                        <Text style={styles.actionLocation}>{acao.local}</Text>
+                        <View style={styles.ratingContainer}>
+                          <Ionicons name="star" size={12} color="#A6FF00" />
+                          <Text style={styles.ratingText}>{acao.nota}</Text>
                         </View>
-                      </LinearGradient>
-                    </ImageBackground>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            )}
+                      </View>
+                    </LinearGradient>
+                  </ImageBackground>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
 
+          {/* BOTÃO LOGOUT */}
           <TouchableOpacity
             style={styles.logoutButton}
             activeOpacity={0.7}
@@ -281,6 +192,7 @@ export default function PerfilScreen() {
         </ScrollView>
       </LinearGradient>
 
+      {/* MODAL DE LOGOUT */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -292,12 +204,10 @@ export default function PerfilScreen() {
             <View style={styles.modalIconContainer}>
               <Ionicons name="log-out-outline" size={32} color="#FF3B30" />
             </View>
-
             <Text style={styles.modalTitle}>Sair da conta</Text>
             <Text style={styles.modalText}>
               Tem certeza que deseja sair do IgarApp?
             </Text>
-
             <View style={styles.modalButtonsRow}>
               <TouchableOpacity
                 style={styles.modalCancelButton}
@@ -306,7 +216,6 @@ export default function PerfilScreen() {
               >
                 <Text style={styles.modalCancelText}>Cancelar</Text>
               </TouchableOpacity>
-
               <TouchableOpacity
                 style={styles.modalConfirmButton}
                 activeOpacity={0.7}
@@ -330,69 +239,22 @@ export default function PerfilScreen() {
   );
 }
 
-const TopGlassButton = ({
-  icon,
-  onPress,
-}: {
-  icon: any;
-  onPress: () => void;
-}) => (
-  <TouchableOpacity
-    style={styles.topGlassButton}
-    onPress={onPress}
-    activeOpacity={0.7}
-  >
-    <View
-      style={{
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: "rgba(0, 44, 59, 0.4)",
-      }}
-    />
-    <Svg width="44" height="44" viewBox="0 0 44 44" fill="none">
-      <Rect
-        x="0.35"
-        y="0.35"
-        width="43.3"
-        height="43.3"
-        rx="14.65"
-        stroke="white"
-        strokeOpacity="0.15"
-        strokeWidth="0.7"
-      />
-      <G>
-        <Rect x="2.5" y="2.5" width="39" height="39" rx="15" fill="#EEE82C" />
-        <Rect
-          x="3"
-          y="3"
-          width="38"
-          height="38"
-          rx="14.5"
-          stroke="#001A23"
-          strokeOpacity="0.4"
-        />
-        {icon}
-      </G>
-    </Svg>
-  </TouchableOpacity>
-);
-
 const styles = StyleSheet.create({
+  container: { flex: 1 },
   header: {
     paddingHorizontal: 24,
     marginTop: 65,
+    marginBottom: 10,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: "600",
     color: "#E8F1F2",
   },
-  container: {
-    flex: 1,
-  },
   coverContainer: {
     paddingHorizontal: 24,
-    marginTop: Platform.OS === "ios" ? 50 : 25,
-    marginBottom: 40,
+    marginTop: Platform.OS === "ios" ? 20 : 10,
+    marginBottom: 50,
     width: "100%",
     alignItems: "center",
   },
@@ -402,14 +264,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     alignItems: "flex-end",
     padding: 12,
-  },
-  topGlassButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 15,
-    overflow: "hidden",
-    justifyContent: "center",
-    alignItems: "center",
   },
   editButtonOverlay: {
     flexDirection: "row",
@@ -421,11 +275,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.2)",
   },
-  editButtonText: {
-    color: "#FFF",
-    fontSize: 12,
-    fontWeight: "500",
-  },
+  editButtonText: { color: "#FFF", fontSize: 12, fontWeight: "500" },
   profileImageWrapper: {
     position: "absolute",
     bottom: -30,
@@ -436,32 +286,10 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: "#012A36",
     backgroundColor: "#012A36",
+    overflow: "hidden",
   },
-  profileImage: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 40,
-  },
-  infoContainer: {
-    paddingHorizontal: 24,
-    marginBottom: 30,
-  },
-  tagContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#A6FF00",
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  tagText: {
-    color: "#012A36",
-    fontSize: 12,
-    fontWeight: "bold",
-    marginLeft: 4,
-  },
+  profileImage: { width: "100%", height: "100%", borderRadius: 40 },
+  infoContainer: { paddingHorizontal: 24, marginBottom: 30 },
   accountType: {
     color: "rgba(255,255,255,0.5)",
     fontSize: 12,
@@ -471,32 +299,17 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 6,
-  },
-  profileInfo: {
-    color: "rgba(255,255,255,0.65)",
-    fontSize: 13,
-    marginBottom: 4,
+    marginBottom: 8,
   },
   bioText: {
     color: "rgba(255,255,255,0.7)",
     fontSize: 14,
     lineHeight: 20,
-    marginTop: 12,
     marginBottom: 16,
   },
-  instagramLink: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  instagramText: {
-    color: "#A6FF00",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  actionsContainer: {
-    marginTop: 0,
-  },
+  instagramLink: { flexDirection: "row", alignItems: "center" },
+  instagramText: { color: "#A6FF00", fontSize: 14, fontWeight: "500" },
+  actionsContainer: { marginTop: 0 },
   sectionTitle: {
     color: "#FFF",
     fontSize: 18,
@@ -504,21 +317,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     marginBottom: 16,
   },
-  emptyActionsText: {
-    color: "rgba(255,255,255,0.6)",
-    fontSize: 14,
-    paddingHorizontal: 24,
-  },
-  actionCard: {
-    width: 260,
-    height: 160,
-    marginRight: 16,
-    borderRadius: 16,
-  },
-  actionImage: {
-    width: "100%",
-    height: "100%",
-  },
+  actionCard: { width: 260, height: 160, marginRight: 16, borderRadius: 16 },
+  actionImage: { width: "100%", height: "100%" },
   actionGradient: {
     flex: 1,
     justifyContent: "flex-end",
@@ -536,14 +336,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  actionLocation: {
-    color: "rgba(255,255,255,0.7)",
-    fontSize: 12,
-  },
-  ratingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
+  actionLocation: { color: "rgba(255,255,255,0.7)", fontSize: 12 },
+  ratingContainer: { flexDirection: "row", alignItems: "center" },
   ratingText: {
     color: "#FFF",
     fontSize: 12,
@@ -618,11 +412,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  modalCancelText: {
-    color: "#E8F1F2",
-    fontSize: 16,
-    fontWeight: "600",
-  },
+  modalCancelText: { color: "#E8F1F2", fontSize: 16, fontWeight: "600" },
   modalConfirmButton: {
     flex: 1,
     height: 50,
@@ -633,9 +423,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  modalConfirmText: {
-    color: "#FF3B30",
-    fontSize: 16,
-    fontWeight: "600",
-  },
+  modalConfirmText: { color: "#FF3B30", fontSize: 16, fontWeight: "600" },
 });

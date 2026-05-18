@@ -1,33 +1,91 @@
+// app/editperfil_pf.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import Svg, { G, Path, Rect } from "react-native-svg";
 import { useAuth } from "@/src/contexts/AuthContext";
-import { userService, showSuccessAlert, showErrorAlert } from "@/src/services/firebase/firestoreService";
+import {
+  userService,
+  showSuccessAlert,
+  showErrorAlert,
+} from "@/src/services/firebase/firestoreService";
+import {
+  uploadImagem,
+  uploadMultiplasImagens,
+} from "@/src/services/cloudnaryService";
 
 export default function EditarPerfilScreen() {
   const router = useRouter();
   const { user } = useAuth();
 
-  // Estados dos inputs
   const [nome, setNome] = useState(user?.nome ?? "");
   const [bio, setBio] = useState(user?.bio ?? "");
   const [instagram, setInstagram] = useState(user?.insta ?? "");
   const [loading, setLoading] = useState(false);
-
-  // Controle de foco
   const [focused, setFocused] = useState("");
 
+  // URIs locais para preview
+  const [fotoPerfilUri, setFotoPerfilUri] = useState<string | null>(null);
+  const [fotoCapaUri, setFotoCapaUri] = useState<string | null>(null);
+
+  // Estado de upload individual
+  const [uploadandoPerfil, setUploadandoPerfil] = useState(false);
+  const [uploadandoCapa, setUploadandoCapa] = useState(false);
+
+  // ── Selecionar foto de perfil ──────────────────────────────────────────────
+  const selecionarFotoPerfil = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permissão negada", "Precisamos acessar sua galeria.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setFotoPerfilUri(result.assets[0].uri);
+    }
+  };
+
+  // ── Selecionar foto de capa ────────────────────────────────────────────────
+  const selecionarFotoCapa = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permissão negada", "Precisamos acessar sua galeria.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setFotoCapaUri(result.assets[0].uri);
+    }
+  };
+
+  // ── Salvar ────────────────────────────────────────────────────────────────
   async function saveEdit() {
     if (!user?.uid) {
       showErrorAlert("Usuário não identificado. Faça login novamente.");
@@ -37,18 +95,42 @@ export default function EditarPerfilScreen() {
     try {
       setLoading(true);
 
+      let fotoPerfilUrl: string | undefined;
+      let fotoCapaUrl: string | undefined;
+
+      // Upload foto de perfil se selecionada
+      if (fotoPerfilUri) {
+        setUploadandoPerfil(true);
+        const res = await uploadImagem(fotoPerfilUri, "perfil");
+        fotoPerfilUrl = res.secure_url;
+        setUploadandoPerfil(false);
+      }
+
+      // Upload foto de capa se selecionada
+      if (fotoCapaUri) {
+        setUploadandoCapa(true);
+        const res = await uploadImagem(fotoCapaUri, "perfil");
+        fotoCapaUrl = res.secure_url;
+        setUploadandoCapa(false);
+      }
+
       await userService.salvarPerfil(user.uid, {
         nome: nome.trim(),
         bio: bio.trim(),
         insta: instagram.trim(),
+        ...(fotoPerfilUrl && { fotoPerfil: fotoPerfilUrl }),
+        ...(fotoCapaUrl && { fotoCapa: fotoCapaUrl }),
       });
 
       showSuccessAlert("Perfil atualizado com sucesso!");
       router.back();
     } catch (error) {
+      console.error(error);
       showErrorAlert("Não foi possível salvar as alterações. Tente novamente.");
     } finally {
       setLoading(false);
+      setUploadandoPerfil(false);
+      setUploadandoCapa(false);
     }
   }
 
@@ -73,9 +155,7 @@ export default function EditarPerfilScreen() {
             />
           }
         />
-
         <Text style={styles.headerTitle}>Editar Perfil</Text>
-
         <View style={{ width: 44 }} />
       </View>
 
@@ -83,26 +163,66 @@ export default function EditarPerfilScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* BOTÕES DE ALTERAR IMAGEM */}
+        {/* BOTÕES DE IMAGEM */}
         <View style={styles.imageButtonsContainer}>
-          <TouchableOpacity style={styles.imageButton}>
-            <Ionicons
-              name="image-outline"
-              size={20}
-              color="#A6FF00"
-              style={{ marginBottom: 8 }}
-            />
-            <Text style={styles.imageButtonText}>Alterar Capa</Text>
+          {/* CAPA */}
+          <TouchableOpacity
+            style={styles.imageButton}
+            onPress={selecionarFotoCapa}
+            activeOpacity={0.8}
+          >
+            {fotoCapaUri ? (
+              <Image
+                source={{ uri: fotoCapaUri }}
+                style={StyleSheet.absoluteFillObject}
+                borderRadius={16}
+              />
+            ) : null}
+            {uploadandoCapa ? (
+              <ActivityIndicator color="#A6FF00" />
+            ) : (
+              <>
+                <Ionicons
+                  name="image-outline"
+                  size={20}
+                  color="#A6FF00"
+                  style={{ marginBottom: 8 }}
+                />
+                <Text style={styles.imageButtonText}>
+                  {fotoCapaUri ? "Capa selecionada ✓" : "Alterar Capa"}
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.imageButton}>
-            <Ionicons
-              name="camera-outline"
-              size={20}
-              color="#A6FF00"
-              style={{ marginBottom: 8 }}
-            />
-            <Text style={styles.imageButtonText}>Alterar Foto</Text>
+          {/* FOTO DE PERFIL */}
+          <TouchableOpacity
+            style={styles.imageButton}
+            onPress={selecionarFotoPerfil}
+            activeOpacity={0.8}
+          >
+            {fotoPerfilUri ? (
+              <Image
+                source={{ uri: fotoPerfilUri }}
+                style={StyleSheet.absoluteFillObject}
+                borderRadius={16}
+              />
+            ) : null}
+            {uploadandoPerfil ? (
+              <ActivityIndicator color="#A6FF00" />
+            ) : (
+              <>
+                <Ionicons
+                  name="camera-outline"
+                  size={20}
+                  color="#A6FF00"
+                  style={{ marginBottom: 8 }}
+                />
+                <Text style={styles.imageButtonText}>
+                  {fotoPerfilUri ? "Foto selecionada ✓" : "Alterar Foto"}
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -110,7 +230,7 @@ export default function EditarPerfilScreen() {
         <View style={styles.formContainer}>
           <Text style={styles.label}>Nome de exibição</Text>
           <TextInput
-            placeholder="Seu nome ou nome da ONG"
+            placeholder="Seu nome"
             placeholderTextColor="rgba(255,255,255,0.35)"
             value={nome}
             onChangeText={setNome}
@@ -167,7 +287,7 @@ export default function EditarPerfilScreen() {
         </View>
       </ScrollView>
 
-      {/* BOTÃO SALVAR (Fixo no rodapé) */}
+      {/* BOTÃO SALVAR */}
       <View style={styles.footer}>
         <TouchableOpacity
           style={[styles.saveButton, loading && { opacity: 0.7 }]}
@@ -188,9 +308,6 @@ export default function EditarPerfilScreen() {
   );
 }
 
-// ==========================================
-// COMPONENTE DO BOTÃO PADRÃO (VIDRO + AMARELO)
-// ==========================================
 const TopGlassButton = ({
   icon,
   onPress,
@@ -246,7 +363,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 60,
     paddingBottom: 20,
-    backgroundColor: "transparent",
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255,255,255,0.05)",
   },
@@ -267,6 +383,7 @@ const styles = StyleSheet.create({
     borderStyle: "dashed",
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
   },
   imageButtonText: { color: "rgba(255,255,255,0.7)", fontSize: 12 },
   formContainer: { flex: 1 },

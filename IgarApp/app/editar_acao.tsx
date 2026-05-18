@@ -1,9 +1,13 @@
+// app/editar_acao.tsx
 import { LinearGradient } from "expo-linear-gradient";
+import * as ImagePicker from "expo-image-picker";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
+  Image,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -16,6 +20,7 @@ import {
 import Svg, { G, Path, Rect } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { acaoService } from "@/src/services/firebase/firestoreService";
+import { uploadMultiplasImagens } from "@/src/services/cloudnaryService";
 
 const { width } = Dimensions.get("window");
 
@@ -38,11 +43,9 @@ export default function EditarAcaoScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  // --- LOADING E ERRO ---
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  // Estados dos inputs
   const [titulo, setTitulo] = useState("");
   const [cidade, setCidade] = useState("");
   const [estado, setEstado] = useState("");
@@ -50,10 +53,25 @@ export default function EditarAcaoScreen() {
   const [horaFim, setHoraFim] = useState("");
   const [voluntarios, setVoluntarios] = useState("");
   const [descricao, setDescricao] = useState("");
-
-  // --- LÓGICA DAS METAS E ORIENTAÇÕES ---
   const [metas, setMetas] = useState<string[]>([]);
   const [metaInput, setMetaInput] = useState("");
+
+  // Imagens já salvas (URLs do Cloudinary/Firestore)
+  const [imagensExistentes, setImagensExistentes] = useState<string[]>([]);
+  // Novas imagens selecionadas localmente
+  const [novasImagensUri, setNovasImagensUri] = useState<string[]>([]);
+  const [uploadandoImagens, setUploadandoImagens] = useState(false);
+
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const anoVisualizado = currentDate.getFullYear();
+  const mesVisualizado = currentDate.getMonth();
+  const [selectedDay, setSelectedDay] = useState(new Date().getDate());
+
+  const diasNoMes = new Date(anoVisualizado, mesVisualizado + 1, 0).getDate();
+  const arrayDias = Array.from({ length: diasNoMes }, (_, i) => i + 1);
+  const primeiroDiaDoMes = new Date(anoVisualizado, mesVisualizado, 1).getDay();
+  const offset = primeiroDiaDoMes === 0 ? 6 : primeiroDiaDoMes - 1;
+  const espacosVazios = Array.from({ length: offset }, (_, i) => i);
 
   const adicionarMeta = () => {
     if (metaInput.trim() !== "") {
@@ -68,20 +86,7 @@ export default function EditarAcaoScreen() {
     setMetas(novasMetas);
   };
 
-  // --- LÓGICA DINÂMICA DO CALENDÁRIO ---
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const anoVisualizado = currentDate.getFullYear();
-  const mesVisualizado = currentDate.getMonth();
-
-  const [selectedDay, setSelectedDay] = useState(new Date().getDate());
-
-  const diasNoMes = new Date(anoVisualizado, mesVisualizado + 1, 0).getDate();
-  const arrayDias = Array.from({ length: diasNoMes }, (_, i) => i + 1);
-  const primeiroDiaDoMes = new Date(anoVisualizado, mesVisualizado, 1).getDay();
-  const offset = primeiroDiaDoMes === 0 ? 6 : primeiroDiaDoMes - 1;
-  const espacosVazios = Array.from({ length: offset }, (_, i) => i);
-
-  // --- CARREGA DADOS DO FIRESTORE ---
+  // ── Carrega ação do Firestore ──────────────────────────────────────────────
   useEffect(() => {
     if (!id) {
       setErro("ID da ação não encontrado.");
@@ -89,11 +94,10 @@ export default function EditarAcaoScreen() {
       return;
     }
 
-    const carregarAcao = async () => {
+    const carregar = async () => {
       try {
         setCarregando(true);
         const acao = await acaoService.getAcaoById(id);
-
         if (!acao) {
           setErro("Ação não encontrada.");
           return;
@@ -107,29 +111,72 @@ export default function EditarAcaoScreen() {
         setVoluntarios(String(acao.voluntariosNecessarios || ""));
         setDescricao(acao.descricao || "");
         setMetas(acao.metas || []);
+        setImagensExistentes(acao.imagens || []);
 
-        const dataAcao = acao.data instanceof Date ? acao.data : new Date(acao.data);
-        setCurrentDate(new Date(dataAcao.getFullYear(), dataAcao.getMonth(), 1));
+        const dataAcao =
+          acao.data instanceof Date ? acao.data : new Date(acao.data);
+        setCurrentDate(
+          new Date(dataAcao.getFullYear(), dataAcao.getMonth(), 1),
+        );
         setSelectedDay(dataAcao.getDate());
       } catch (e) {
-        console.error("Erro ao carregar ação:", e);
         setErro("Erro ao carregar os dados da ação.");
       } finally {
         setCarregando(false);
       }
     };
 
-    carregarAcao();
+    carregar();
   }, [id]);
 
-  // --- SALVAR ALTERAÇÕES ---
+  // ── Selecionar novas imagens ──────────────────────────────────────────────
+  const selecionarImagens = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permissão negada", "Precisamos acessar sua galeria.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 0.8,
+      selectionLimit: 5,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      const uris = result.assets.map((a) => a.uri);
+      setNovasImagensUri((prev) => [...prev, ...uris].slice(0, 5));
+    }
+  };
+
+  const removerImagemExistente = (index: number) => {
+    setImagensExistentes((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removerNovaImagem = (index: number) => {
+    setNovasImagensUri((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // ── Salvar alterações ─────────────────────────────────────────────────────
   const handleSalvar = async () => {
     if (!id) return;
     try {
+      setUploadandoImagens(true);
+
+      // Faz upload das novas imagens, mantém as existentes
+      let urlsNovas: string[] = [];
+      if (novasImagensUri.length > 0) {
+        urlsNovas = await uploadMultiplasImagens(novasImagensUri, "acao");
+      }
+
+      const todasImagens = [...imagensExistentes, ...urlsNovas];
+      setUploadandoImagens(false);
+
       const dataAtualizada = new Date(
         currentDate.getFullYear(),
         currentDate.getMonth(),
-        selectedDay
+        selectedDay,
       );
 
       await acaoService.editarAcao(id, {
@@ -142,18 +189,28 @@ export default function EditarAcaoScreen() {
         descricao,
         metas,
         data: dataAtualizada,
+        imagens: todasImagens,
       });
 
       router.back();
     } catch (e) {
       console.error("Erro ao salvar:", e);
+      Alert.alert("Erro", "Não foi possível salvar as alterações.");
+    } finally {
+      setUploadandoImagens(false);
     }
   };
 
-  // --- TELA DE LOADING ---
   if (carregando) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#012A36", justifyContent: "center", alignItems: "center" }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "#012A36",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
         <ActivityIndicator size="large" color="#EEE82C" />
         <Text style={{ color: "#E8F1F2", marginTop: 12, fontWeight: "300" }}>
           Carregando ação...
@@ -162,12 +219,24 @@ export default function EditarAcaoScreen() {
     );
   }
 
-  // --- TELA DE ERRO ---
   if (erro) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#012A36", justifyContent: "center", alignItems: "center", padding: 24 }}>
-        <Text style={{ color: "#E8F1F2", fontSize: 16, textAlign: "center" }}>{erro}</Text>
-        <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 20 }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "#012A36",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: 24,
+        }}
+      >
+        <Text style={{ color: "#E8F1F2", fontSize: 16, textAlign: "center" }}>
+          {erro}
+        </Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={{ marginTop: 20 }}
+        >
           <Text style={{ color: "#EEE82C" }}>Voltar</Text>
         </TouchableOpacity>
       </View>
@@ -182,7 +251,6 @@ export default function EditarAcaoScreen() {
         translucent
       />
 
-      {/* FUNDO COM GRADIENTE LINEAR */}
       <LinearGradient
         colors={["#044A60", "#012A36", "#012A36"]}
         locations={[0, 0.4, 1]}
@@ -194,18 +262,16 @@ export default function EditarAcaoScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         <SafeAreaView>
-          {/* HEADER */}
           <View style={styles.header}>
             <TopGlassButton onPress={() => router.back()} />
             <Text style={styles.headerTitle}>Editar Ação</Text>
           </View>
 
           <Text style={styles.descriptionHeader}>
-            Altere os dados da ação. Modifique a descrição, data, horário ou
-            atualize as metas para manter seus voluntários informados.
+            Altere os dados da ação e atualize as imagens se necessário.
           </Text>
 
-          {/* INFORMAÇÕES BÁSICAS */}
+          {/* TÍTULO */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Título da ação</Text>
             <View style={styles.inputContainer}>
@@ -217,6 +283,7 @@ export default function EditarAcaoScreen() {
             </View>
           </View>
 
+          {/* CIDADE / ESTADO */}
           <View style={styles.rowInputs}>
             <View style={[styles.inputGroup, { flex: 1 }]}>
               <Text style={styles.label}>Cidade</Text>
@@ -240,6 +307,7 @@ export default function EditarAcaoScreen() {
             </View>
           </View>
 
+          {/* HORÁRIO */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Horário do evento</Text>
             <View style={styles.timeRow}>
@@ -261,19 +329,16 @@ export default function EditarAcaoScreen() {
             </View>
           </View>
 
-          {/* CARD DE DATA */}
+          {/* CARD DATA */}
           <View style={styles.dateDisplayCard}>
             <LinearGradient
               colors={["#0083B1", "#05506B"]}
               style={styles.dateDisplayGradient}
             >
               <View style={styles.dateDisplayContent}>
-                <View style={styles.dateIconTextRow}>
-                  <CalendarIconWhite />
-                  <Text style={styles.dateDisplayText}>
-                    Escolha a data do evento
-                  </Text>
-                </View>
+                <Text style={styles.dateDisplayText}>
+                  Escolha a data do evento
+                </Text>
                 <Text style={styles.dateBigNumber}>
                   {selectedDay < 10 ? `0${selectedDay}` : selectedDay}
                   <Text style={{ color: "#EEE82C" }}>
@@ -287,7 +352,7 @@ export default function EditarAcaoScreen() {
             </LinearGradient>
           </View>
 
-          {/* CALENDÁRIO DINÂMICO CONSERTADO */}
+          {/* CALENDÁRIO */}
           <View style={styles.calendarContainer}>
             <View style={styles.calendarHeader}>
               <TouchableOpacity
@@ -323,7 +388,7 @@ export default function EditarAcaoScreen() {
             </View>
             <View style={styles.daysGrid}>
               {espacosVazios.map((_, i) => (
-                <View key={`empty-${i}`} style={styles.dayCellContainer} />
+                <View key={`e-${i}`} style={styles.dayCellContainer} />
               ))}
               {arrayDias.map((dia) => {
                 const isSelected = selectedDay === dia;
@@ -351,7 +416,7 @@ export default function EditarAcaoScreen() {
             </View>
           </View>
 
-          {/* DESCRIÇÃO DO EVENTO */}
+          {/* DESCRIÇÃO */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Descrição do evento</Text>
             <View
@@ -365,13 +430,13 @@ export default function EditarAcaoScreen() {
                 onChangeText={setDescricao}
                 style={[styles.textInput, { textAlignVertical: "top" }]}
                 multiline
-                placeholder="Detalhes completos sobre a ação..."
+                placeholder="Detalhes..."
                 placeholderTextColor="#FFFFFFB2"
               />
             </View>
           </View>
 
-          {/* ESTIMATIVA DE VOLUNTÁRIOS */}
+          {/* VOLUNTÁRIOS */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Estimativa de voluntários</Text>
             <View style={styles.inputContainer}>
@@ -384,14 +449,13 @@ export default function EditarAcaoScreen() {
             </View>
           </View>
 
-          {/* METAS E ORIENTAÇÕES */}
+          {/* METAS */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Metas e Orientações</Text>
-
             <View style={styles.metaInputRow}>
               <View style={[styles.inputContainer, { flex: 1 }]}>
                 <TextInput
-                  placeholder="Ex: Levar saco de lixo grande..."
+                  placeholder="Ex: Levar saco de lixo..."
                   placeholderTextColor="#FFFFFFB2"
                   value={metaInput}
                   onChangeText={setMetaInput}
@@ -406,7 +470,6 @@ export default function EditarAcaoScreen() {
                 <PlusIcon />
               </TouchableOpacity>
             </View>
-
             {metas.length > 0 && (
               <View style={styles.metasList}>
                 {metas.map((meta, index) => (
@@ -428,11 +491,77 @@ export default function EditarAcaoScreen() {
             )}
           </View>
 
-          {/* GALERIA DE UPLOAD */}
-          <Text style={styles.label}>Atualizar fotos do local</Text>
+          {/* GALERIA — imagens existentes + novas */}
+          <Text style={styles.label}>Fotos do local</Text>
+
+          {/* Imagens JÁ salvas */}
+          {imagensExistentes.length > 0 && (
+            <View>
+              <Text
+                style={[
+                  styles.label,
+                  { marginBottom: 8, color: "rgba(255,255,255,0.5)" },
+                ]}
+              >
+                Imagens atuais
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginBottom: 12 }}
+                contentContainerStyle={{ gap: 10, paddingHorizontal: 2 }}
+              >
+                {imagensExistentes.map((url, index) => (
+                  <View key={index} style={styles.previewImageWrapper}>
+                    <Image source={{ uri: url }} style={styles.previewImage} />
+                    <TouchableOpacity
+                      style={styles.previewRemoveBtn}
+                      onPress={() => removerImagemExistente(index)}
+                    >
+                      <Ionicons name="close-circle" size={20} color="#FFF" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Novas imagens selecionadas */}
+          {novasImagensUri.length > 0 && (
+            <View>
+              <Text
+                style={[
+                  styles.label,
+                  { marginBottom: 8, color: "rgba(255,255,255,0.5)" },
+                ]}
+              >
+                Novas imagens
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginBottom: 12 }}
+                contentContainerStyle={{ gap: 10, paddingHorizontal: 2 }}
+              >
+                {novasImagensUri.map((uri, index) => (
+                  <View key={index} style={styles.previewImageWrapper}>
+                    <Image source={{ uri }} style={styles.previewImage} />
+                    <TouchableOpacity
+                      style={styles.previewRemoveBtn}
+                      onPress={() => removerNovaImagem(index)}
+                    >
+                      <Ionicons name="close-circle" size={20} color="#FFF" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
           <TouchableOpacity
             style={styles.uploadMainContainer}
             activeOpacity={0.8}
+            onPress={selecionarImagens}
           >
             <View style={styles.uploadDashedArea}>
               <LinearGradient
@@ -440,23 +569,39 @@ export default function EditarAcaoScreen() {
                 style={StyleSheet.absoluteFillObject}
               />
               <View style={styles.uploadContent}>
-                <Text style={styles.uploadTitle}>Substituir imagens</Text>
-                <View style={styles.uploadIconCircle}>
-                  <UploadIconSVG />
-                </View>
-                <Text style={styles.uploadSub}>
-                  As dimensões devem ser 1080 x 1920 pixels no formato .PNG
-                </Text>
+                {uploadandoImagens ? (
+                  <>
+                    <ActivityIndicator color="#EEE82C" size="large" />
+                    <Text style={styles.uploadTitle}>Enviando imagens...</Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.uploadTitle}>
+                      Substituir / adicionar imagens
+                    </Text>
+                    <View style={styles.uploadIconCircle}>
+                      <UploadIconSVG />
+                    </View>
+                    <Text style={styles.uploadSub}>
+                      Máximo 5 imagens · PNG ou JPEG
+                    </Text>
+                  </>
+                )}
               </View>
             </View>
           </TouchableOpacity>
 
           {/* BOTÃO SALVAR */}
           <TouchableOpacity
-            style={styles.saveButton}
+            style={[styles.saveButton, uploadandoImagens && { opacity: 0.7 }]}
             onPress={handleSalvar}
+            disabled={uploadandoImagens}
           >
-            <Text style={styles.saveButtonText}>Salvar Alterações</Text>
+            {uploadandoImagens ? (
+              <ActivityIndicator color="#001A23" />
+            ) : (
+              <Text style={styles.saveButtonText}>Salvar Alterações</Text>
+            )}
           </TouchableOpacity>
         </SafeAreaView>
       </ScrollView>
@@ -464,9 +609,7 @@ export default function EditarAcaoScreen() {
   );
 }
 
-// ==========================================
-// COMPONENTES AUXILIARES E ÍCONES SVG
-// ==========================================
+// ── Ícones ────────────────────────────────────────────────────────────────────
 
 const TopGlassButton = ({ onPress }: { onPress: () => void }) => (
   <TouchableOpacity
@@ -513,17 +656,6 @@ const TopGlassButton = ({ onPress }: { onPress: () => void }) => (
       </G>
     </Svg>
   </TouchableOpacity>
-);
-
-const CalendarIconWhite = () => (
-  <Svg width="14" height="14" viewBox="0 0 12 12" fill="none">
-    <Path
-      d="M3.375 1.5V2.625M8.625 1.5V2.625M1.5 9.375V3.75C1.5 3.12868 2.00368 2.625 2.625 2.625H9.375C9.99632 2.625 10.5 3.12868 10.5 3.75V9.375M1.5 9.375C1.5 9.99632 2.00368 10.5 2.625 10.5H9.375C9.99632 10.5 10.5 9.99632 10.5 9.375M1.5 9.375V5.625C1.5 5.00368 2.00368 4.5 2.625 4.5H9.375C9.99632 4.5 10.5 5.00368 10.5 5.625V9.375"
-      stroke="white"
-      strokeWidth="1"
-      strokeLinecap="round"
-    />
-  </Svg>
 );
 
 const SetaBack = () => (
@@ -574,15 +706,9 @@ const UploadIconSVG = () => (
   </Svg>
 );
 
-// ==========================================
-// ESTILOS UNIFICADOS
-// ==========================================
-
 const styles = StyleSheet.create({
   mainContainer: { flex: 1, backgroundColor: "#001A23" },
   scrollContent: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 60 },
-
-  // Header
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -605,7 +731,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 35,
   },
-
   inputGroup: { marginBottom: 15 },
   label: {
     color: "#FFFFFFB2",
@@ -632,7 +757,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#D9D9D966",
     marginHorizontal: 10,
   },
-
   dateDisplayCard: {
     height: 80,
     borderRadius: 20,
@@ -651,10 +775,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  dateIconTextRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   dateDisplayText: { color: "#E8F1F2", fontSize: 14, fontWeight: "300" },
   dateBigNumber: { color: "#E8F1F2", fontSize: 25, fontWeight: "400" },
-
   calendarContainer: { marginBottom: 30 },
   calendarHeader: {
     flexDirection: "row",
@@ -692,8 +814,6 @@ const styles = StyleSheet.create({
   },
   dayText: { color: "#E8F1F2", fontSize: 16, fontWeight: "300" },
   daySelected: { backgroundColor: "#EEE82C" },
-
-  // ESTILOS DAS METAS E ORIENTAÇÕES (PÍLULAS)
   metaInputRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   addMetaBtn: {
     width: 47,
@@ -724,9 +844,23 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   metaRemoveBtn: { padding: 2 },
-
+  previewImageWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    overflow: "hidden",
+    position: "relative",
+  },
+  previewImage: { width: "100%", height: "100%" },
+  previewRemoveBtn: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 10,
+  },
   uploadMainContainer: {
-    height: 186,
+    height: 140,
     borderRadius: 15,
     backgroundColor: "#002C3B",
     padding: 5,
@@ -750,16 +884,17 @@ const styles = StyleSheet.create({
     color: "#E8F1F2",
     fontSize: 12,
     fontWeight: "300",
-    marginBottom: 15,
+    marginBottom: 10,
+    textAlign: "center",
   },
   uploadIconCircle: {
-    width: 65,
-    height: 65,
-    borderRadius: 35,
+    width: 45,
+    height: 45,
+    borderRadius: 25,
     backgroundColor: "#05506B",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 15,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: "#FFFFFF33",
   },
@@ -769,8 +904,6 @@ const styles = StyleSheet.create({
     fontWeight: "300",
     textAlign: "center",
   },
-
-  // BOTÃO SALVAR
   saveButton: {
     backgroundColor: "#EEE82C",
     height: 55,
