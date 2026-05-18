@@ -208,6 +208,43 @@ export const participacaoService = {
 // Serviço de ações
 export const acaoService = {
 
+  async getAcoesPorOng(ongId: string): Promise<Acao[]> {
+    try {
+      const acoesRef = collection(firestore, 'acoes');
+      const q = query(acoesRef, where('ongId', '==', ongId));
+      const snapshot = await getDocs(q);
+
+      const acoes: Acao[] = [];
+      snapshot.forEach((doc) => {
+        const info = doc.data();
+        acoes.push({
+          id: doc.id,
+          titulo: info?.titulo || '',
+          descricao: info?.descricao || '',
+          cidade: info?.cidade || '',
+          estado: info?.estado || '',
+          data: info?.data?.toDate ? info.data.toDate() : new Date(info.data),
+          horaInicio: info?.horaInicio || '',
+          horaFim: info?.horaFim || '',
+          voluntariosNecessarios: info?.voluntariosNecessarios || 0,
+          voluntariosInscritos: info?.voluntariosInscritos || 0,
+          ongId: info?.ongId || '',
+          imagens: info?.imagens || [],
+          metas: info?.metas || [],
+          orientacoes: info?.orientacoes || '',
+          lixoRecolhido: info?.lixoRecolhido || '',
+          metasConcluidas: info?.metasConcluidas || [],
+          createdAt: info?.createdAt,
+        });
+      });
+
+      return acoes;
+    } catch (error: any) {
+      console.error('Erro ao buscar ações da ONG:', error);
+      throw error;
+    }
+  },
+
   // Função para mover evento para histórico
   async moverParaHistorico(eventoId: string) {
     try {
@@ -310,7 +347,7 @@ export const acaoService = {
         horaFim: info?.horaFim || '',
         voluntariosNecessarios: info?.voluntariosNecessarios || 0,
         voluntariosInscritos: info?.voluntariosInscritos || 0,
-        ongId: info?.organizadorId || '',
+        ongId: info?.ongId || '',
         imagens: info?.imagens || [],
         metas: info?.metas || [],
         orientacoes: info?.orientacoes || '',
@@ -356,7 +393,7 @@ export const acaoService = {
             horaFim: data?.horaFim || '',
             voluntariosNecessarios: data?.voluntariosNecessarios || 0,
             voluntariosInscritos: data?.voluntariosInscritos || 0,
-            ongId: data?.organizadorId || '',
+            ongId: data?.ongId || '',
             imagens: data?.imagens || [],
             metas: data?.metas || [],
             orientacoes: data?.orientacoes || '',
@@ -408,7 +445,7 @@ export const acaoService = {
           horaFim: info?.horaFim || '',
           voluntariosNecessarios: info?.voluntariosNecessarios || 0,
           voluntariosInscritos: info?.voluntariosInscritos || 0,
-          ongId: info?.organizadorId || '',
+          ongId: info?.ongId || '',
           imagens: info?.imagens || [],
           metas: info?.metas || [],
           orientacoes: info?.orientacoes || '',

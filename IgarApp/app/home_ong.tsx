@@ -286,6 +286,7 @@ export default function HomeOngScreen() {
               acoes.map((acao) => {
                 const cardData = {
                   id: acao.id!,
+                  ongId: acao.ongId,
                   orgName: `${acao.cidade}, ${acao.estado}`,
                   title: acao.titulo,
                   subtitle: `${acao.cidade}, ${acao.estado}`,
@@ -298,11 +299,20 @@ export default function HomeOngScreen() {
                       : [require("../src/assets/image_card_1.png")],
                 };
 
+                const isProprietaria = user?.uid === acao.ongId;
+
                 return (
                   <ProjectCard
                     key={cardData.id}
                     data={cardData}
-                    onPressCard={() => abrirModalFinalizar(cardData, acao)}
+                    isProprietaria={isProprietaria}
+                    onPressCard={() => {
+                      if (isProprietaria) {
+                        abrirModalFinalizar(cardData, acao);
+                      } else {
+                        router.push(`./detalhes-evento?id=${acao.id}`);
+                      }
+                    }}
                     onPressEditar={() =>
                       router.push(`./editar_acao?id=${acao.id}`)
                     }
@@ -596,10 +606,12 @@ export default function HomeOngScreen() {
 
 const ProjectCard = ({
   data,
+  isProprietaria,
   onPressCard,
   onPressEditar,
 }: {
   data: any;
+  isProprietaria: boolean;
   onPressCard: () => void;
   onPressEditar: () => void;
 }) => {
@@ -647,7 +659,7 @@ const ProjectCard = ({
         </View>
       </View>
 
-      {/* CORPO DO CARD (CLICÁVEL → abre modal) */}
+      {/* CORPO DO CARD (CLICÁVEL → abre modal ou navega para eventos) */}
       <TouchableOpacity
         activeOpacity={0.9}
         onPress={onPressCard}
@@ -672,18 +684,20 @@ const ProjectCard = ({
             )}
           />
 
-          {/* BOTÃO EDITAR AÇÃO — sobre a imagem, canto inferior direito */}
-          <TouchableOpacity
-            style={styles.editarAcaoButton}
-            onPress={(e) => {
-              e.stopPropagation();
-              onPressEditar();
-            }}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="pencil" size={11} color="#FFFFFF" />
-            <Text style={styles.editarAcaoText}>Editar ação</Text>
-          </TouchableOpacity>
+          {/* DEPOIS — correto, usa a prop recebida */}
+          {isProprietaria && (
+            <TouchableOpacity
+              style={styles.editarAcaoButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                onPressEditar();
+              }}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="pencil" size={11} color="#FFFFFF" />
+              <Text style={styles.editarAcaoText}>Editar ação</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* PAGINAÇÃO */}

@@ -4,7 +4,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Image,
   ImageBackground,
@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import Svg, { Circle, G, Path, Rect } from "react-native-svg";
 import { useAuth } from "@/src/contexts/AuthContext";
+import { acaoService } from "@/src/services/firebase/firestoreService";
 
 // Imagens padrão usadas quando a ONG não tem foto cadastrada
 const FOTO_CAPA_PADRAO = require("../src/assets/image_card_1.png");
@@ -35,6 +36,26 @@ export default function PerfilOngScreen() {
     }, 50);
   };
 
+  const carregarAcoesRecentes = async () => {
+    if (!user?.uid) return; // 👈 evita chamar com uid nulo
+
+    try {
+      const acoes = await acaoService.getAcoesPorOng(user.uid);
+
+      const dadosFormatados = acoes.map(acao => ({
+        id: acao.id || '',
+        titulo: acao.titulo,
+        local: `${acao.cidade}, ${acao.estado}`,
+        nota: '5.0',
+        imagem: acao.imagens?.[0] || FOTO_PERFIL_PADRAO,
+      }));
+      
+      setAcoesRecentes(dadosFormatados);
+    } catch (error) {
+      console.log('Erro ao carregar ações:', error);
+    }
+  };
+
   // ── Resolve fonte da foto de capa ────────────────────────────────────────────
   // user?.fotoCapa vem do Firestore após o editarperfil_ong salvar a URL do Cloudinary.
   // Se existir, usa { uri: "https://res.cloudinary.com/..." }
@@ -48,22 +69,21 @@ export default function PerfilOngScreen() {
     ? { uri: (user as any).fotoPerfil }
     : FOTO_PERFIL_PADRAO;
 
-  const acoesIncentivadas = [
-    {
-      id: "1",
-      titulo: "Igarapé do Mindú",
-      local: "Manaus, Amazonas",
-      nota: "5.0",
-      imagem: FOTO_PERFIL_PADRAO,
-    },
-    {
-      id: "2",
-      titulo: "Praia da Ponta Negra",
-      local: "Manaus, Amazonas",
-      nota: "4.8",
-      imagem: FOTO_PERFIL_PADRAO,
-    },
-  ];
+  interface AcaoRecente {
+    id: string;
+    titulo: string;
+    local: string;
+    nota: string;
+    imagem: any;
+  }
+  
+  const [acoesIncentivadas, setAcoesRecentes] = useState<AcaoRecente[]>([]);
+
+  useEffect(() => {
+      if (user?.uid) {
+        carregarAcoesRecentes();
+      }
+    }, [user]);
 
   return (
     <View style={{ flex: 1 }}>

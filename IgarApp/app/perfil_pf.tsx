@@ -18,7 +18,7 @@ import {
 } from "react-native";
 import Svg, { Circle, G, Path, Rect } from "react-native-svg";
 import { useAuth } from "@/src/contexts/AuthContext";
-import { getHistoricoUsuario } from "@/src/services/firebase/firestoreService";
+import { acaoService } from "@/src/services/firebase/firestoreService";
 
 // Imagem padrão usada quando o usuário não tem foto
 const FOTO_PERFIL_PADRAO = require("../src/assets/image_card_1.png");
@@ -29,26 +29,22 @@ export default function PerfilPfScreen() {
   const { user, signOut } = useAuth();
 
   const carregarAcoesRecentes = async () => {
-  try {
-    const historico = await getHistoricoUsuario(`${user?.uid}`);
+    try {
+      const acoes = await acaoService.getAcoesPorOng(user?.uid || '');
 
-    const dadosFormatados = historico
-      .filter(item => item.acao) // garante que existe ação
-      .map(item => ({
-        id: item.acao?.id || "",
-        titulo: item.acao?.titulo || "",
-        local: `${item.acao?.cidade || ""}, ${item.acao?.estado || ""}`,
-        nota: "5.0", // pode trocar futuramente
-        imagem:
-          item.acao?.imagens?.[0] ||
-          FOTO_PERFIL_PADRAO,
+      const dadosFormatados = acoes.map(acao => ({
+        id: acao.id || '',
+        titulo: acao.titulo,
+        local: `${acao.cidade}, ${acao.estado}`,
+        nota: '5.0',
+        imagem: acao.imagens?.[0] || FOTO_PERFIL_PADRAO,
       }));
 
-    setAcoesRecentes(dadosFormatados);
-  } catch (error) {
-    console.log("Erro ao carregar ações:", error);
-  }
-};
+      setAcoesRecentes(dadosFormatados);
+    } catch (error) {
+      console.log('Erro ao carregar ações:', error);
+    }
+  };
 
   const [isLogoutModalVisible, setLogoutModalVisible] = useState(false);
 
