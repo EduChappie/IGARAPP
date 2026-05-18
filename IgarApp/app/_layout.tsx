@@ -99,7 +99,7 @@ function RootLayoutContent() {
                 activeOpacity={0.7}
                 onPress={() => router.push("/tamba")} 
               >
-                <FishNavIcon active={pathname === "/pesquisa"} />
+                <FishNavIcon active={pathname === "/tamba"} />
               </TouchableOpacity>
             )}
 
