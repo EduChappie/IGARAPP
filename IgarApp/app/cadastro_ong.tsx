@@ -133,6 +133,8 @@ export default function CadastroOngScreen() {
         telefone: telefone.trim(),
         dataFundacao: dataFundacao.trim(),
         sobre: sobre.trim(),
+        fotoCapa: "",
+        fotoPerfil: "",
         endereco: {
           cep: cep.trim(),
           rua: rua.trim(),

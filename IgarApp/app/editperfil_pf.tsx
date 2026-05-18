@@ -29,7 +29,7 @@ import {
 
 export default function EditarPerfilScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
 
   const [nome, setNome] = useState(user?.nome ?? "");
   const [bio, setBio] = useState(user?.bio ?? "");
@@ -123,6 +123,7 @@ export default function EditarPerfilScreen() {
       });
 
       showSuccessAlert("Perfil atualizado com sucesso!");
+      refreshUser()
       router.back();
     } catch (error) {
       console.error(error);

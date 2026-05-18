@@ -20,6 +20,7 @@ import {
   doc,
   getDoc
 } from 'firebase/firestore';
+import { userService } from '../services/firebase/firestoreService';
 
 // Tipo do usuário completo
 interface User {
@@ -54,6 +55,8 @@ interface AuthContextType {
     displayName: string,
     photoURL?: string
   ) => Promise<void>;
+
+  refreshUser:() => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(
@@ -84,6 +87,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
   const [user, setUser] = useState<User | null>(null);
 
   const [loading, setLoading] = useState(true);
+
+
 
   // MONITORAR LOGIN
   useEffect(() => {
@@ -278,6 +283,69 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     }
   };
 
+  const refreshUser = async () => {
+
+    try {
+
+      if (!auth.currentUser) return;
+
+      const authUser = auth.currentUser;
+
+      // Primeiro tenta buscar em "ongs"
+      const ongRef = doc(
+        db,
+        'ongs',
+        authUser.uid
+      );
+
+      const ongSnap = await getDoc(ongRef);
+
+      // Depois tenta buscar em "users"
+      const userRef = doc(
+        db,
+        'users',
+        authUser.uid
+      );
+
+      const userSnap = await getDoc(userRef);
+
+      let firestoreData = null;
+
+      // SE EXISTE EM ONGS
+      if (ongSnap.exists()) {
+
+        firestoreData = ongSnap.data();
+
+      }
+
+      // SE EXISTE EM USERS
+      else if (userSnap.exists()) {
+
+        firestoreData = userSnap.data();
+
+      }
+
+      // MONTA O USUÁRIO COMPLETO
+      setUser({
+        uid: authUser.uid,
+        email: authUser.email,
+        displayName: authUser.displayName,
+        photoURL: authUser.photoURL,
+
+        ...firestoreData,
+      });
+
+    } catch (error) {
+
+      console.error(
+        'Erro ao atualizar usuário:',
+        error
+      );
+
+    }
+
+  };
+
   const value: AuthContextType = {
     user,
     loading,
@@ -285,6 +353,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     signUp,
     signOut,
     updateUserProfile,
+    refreshUser,
   };
 
   return (

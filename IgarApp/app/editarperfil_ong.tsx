@@ -21,12 +21,12 @@ import {
   showSuccessAlert,
   showErrorAlert,
 } from "@/src/services/firebase/firestoreService";
-import { useAuth } from "@/src/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/src/contexts/AuthContext";
 import { uploadImagem } from "@/src/services/cloudnaryService";
 
 export default function EditarPerfilOngScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
 
   const [razaoSocial, setRazaoSocial] = useState(user?.razaoSocial ?? "");
   const [descricaoOng, setDescricaoOng] = useState(user?.bio ?? "");
@@ -83,6 +83,8 @@ export default function EditarPerfilOngScreen() {
 
   // ── Salvar ───────────────────────────────────────────────────────────────
   async function saveEdit() {
+    console.log("DADOS:");
+    
     if (!user?.uid) {
       showErrorAlert("Usuário não identificado. Faça login novamente.");
       return;
@@ -90,7 +92,7 @@ export default function EditarPerfilOngScreen() {
 
     try {
       setLoading(true);
-
+      
       let logoUrl: string | undefined;
       let capaUrl: string | undefined;
 
@@ -117,6 +119,8 @@ export default function EditarPerfilOngScreen() {
       });
 
       showSuccessAlert("Perfil atualizado com sucesso!");
+      refreshUser();
+      
       router.back();
     } catch (error) {
       console.error(error);
@@ -216,6 +220,7 @@ export default function EditarPerfilOngScreen() {
                 </Text>
               </>
             )}
+               
           </TouchableOpacity>
         </View>
 

@@ -199,7 +199,7 @@ export default function DetalhesEventoScreen() {
   const voluntariosInscritos = acao?.voluntariosInscritos || 0;
   const voluntariosNecessarios = acao?.voluntariosNecessarios || 0;
 
-  const dataBase = acao?.dataEvento ?? acao?.data;
+  const dataBase = acao?.data;
   const dataFormatada = dataBase
     ? new Date(dataBase).toLocaleDateString("pt-BR")
     : "Data não informada";

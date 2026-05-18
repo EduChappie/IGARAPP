@@ -80,6 +80,8 @@ export default function CadastroPFScreen() {
         telefone: telefone.trim(),
         dataNascimento: dataNascimento.trim(),
         tipo: "voluntário",
+        fotoCapa: "",
+        fotoPerfil: "",
         dataCriacao: serverTimestamp(),
         uid: userId,
       };
